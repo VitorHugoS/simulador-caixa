@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 
+export const runtime = 'edge'
 export const preferredRegion = ['gru1'] // São Paulo — próximo à API da Caixa
 export const revalidate = 86400 // lista de UFs não muda; cache 24h na CDN
 

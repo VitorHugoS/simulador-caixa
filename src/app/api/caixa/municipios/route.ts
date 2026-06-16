@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const runtime = 'edge'
 export const preferredRegion = ['gru1']
 export const revalidate = 86400 // municípios por UF são estáticos; cache 24h
 
