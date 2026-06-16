@@ -14,7 +14,11 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     })
     if (!response.ok) {
-      return NextResponse.json({ error: `Caixa API retornou ${response.status}` }, { status: response.status })
+      const errBody = await response.json().catch(() => null)
+      return NextResponse.json(
+        errBody ?? { error: `Caixa API retornou ${response.status}` },
+        { status: response.status },
+      )
     }
     const data = await response.json()
     return NextResponse.json(data)
