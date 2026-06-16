@@ -32,6 +32,12 @@ export interface CaixaSeguradora {
   prestacoes?: { prestacao: CaixaPrestacao | CaixaPrestacao[] }
 }
 
+export interface CaixaSistemaAmortizacao {
+  codigo: string
+  descricao: string
+  utilizadoNesteCalculo: string
+}
+
 export interface CaixaSimulacaoData {
   valorFinanciamento?: string
   jurosEfetivos?: string
@@ -41,6 +47,7 @@ export interface CaixaSimulacaoData {
   valorEntrada?: string
   cotaMaximaFinanciamento?: string
   seguradoras?: { seguradora: CaixaSeguradora[] }
+  sistemasAmortizacao?: { sistemaAmortizacao: CaixaSistemaAmortizacao[] }
 }
 
 export interface CaixaUF {
@@ -73,7 +80,7 @@ export interface CaixaApiInput {
   valorImovel: number
   valorEntrada: number
   prazo: number
-  sistemaCodigo: '32' | '33'
+  sistema: 'sac' | 'price'
   dataNascimento: string   // DD/MM/YYYY
   ufImovel: number         // coIbge da UF selecionada
   municipioImovel: number  // codigo do município selecionado

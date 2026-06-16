@@ -93,14 +93,13 @@ export function CaixaApiImport({ state, onChange }: Props) {
       }
 
       const produto = produtos[0]
-      const sistemaCodigo = sistema === 'sac' ? ('32' as const) : ('33' as const)
 
       const simulacaoData = await fetchSimulacao(produto, {
         renda: rendaNum,
         valorImovel: valorImovelNum,
         valorEntrada: valorEntradaNum,
         prazo: prazoNum,
-        sistemaCodigo,
+        sistema,
         dataNascimento: dataNascimentoAPI,
         ufImovel: selectedUF.coIbge,
         municipioImovel: selectedMunicipio.codigo,
