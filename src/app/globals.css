@@ -24,3 +24,7 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+button, input, select, textarea, a, [role="button"] {
+  touch-action: manipulation;
+}
