@@ -28,8 +28,9 @@ export interface CaixaPrestacao {
 export interface CaixaSeguradora {
   codigo?: string
   nome?: string
+  valorPrimeiraPrestacao?: string
   // prestacao can be a single object or an array depending on prazo/produto
-  prestacoes?: { prestacao: CaixaPrestacao | CaixaPrestacao[] }
+  prestacoes?: { prestacao: CaixaPrestacao | CaixaPrestacao[] } | null
 }
 
 export interface CaixaSistemaAmortizacao {

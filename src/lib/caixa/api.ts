@@ -48,6 +48,7 @@ export async function fetchSimulacao(
 ): Promise<CaixaSimulacaoData> {
   const baseSimulacao = {
     enquadramentoProduto: {
+      codigo: '15',
       tipoPessoa: '1',
       autorizaArmazenamentoDadosCliente: 'S',
       dataNascimentoComprador: input.dataNascimento,
@@ -86,18 +87,36 @@ export async function fetchSimulacao(
     return data.simulacao ?? data
   }
 
-  // First call without sistemaAmortizacao — API returns available codes per product
+  // First call without sistemaAmortizacao/seguradora — API returns available options
   const first = await doCall()
 
   // Find the correct sistema code for user's preference (SAC or Price)
   const sistemas = first.sistemasAmortizacao?.sistemaAmortizacao ?? []
   const keyword = input.sistema === 'sac' ? 'SAC' : 'PRICE'
-  const target = sistemas.find((s) => s.descricao?.toUpperCase().startsWith(keyword))
-  const used = sistemas.find((s) => s.utilizadoNesteCalculo === 'S')
+  const targetSistema = sistemas.find((s) => s.descricao?.toUpperCase().startsWith(keyword))
+  const usedSistema = sistemas.find((s) => s.utilizadoNesteCalculo === 'S')
 
-  // If already using the preferred system, return first result
-  if (!target || used?.codigo === target.codigo) return first
+  // Pick the first available insurance provider
+  const seguradoras = first.seguradoras?.seguradora ?? []
+  const firstSeguradora = seguradoras[0]
 
-  // Second call with the correct product-specific sistema code
-  return doCall({ sistemaAmortizacao: { codigo: target.codigo } })
+  const extraFields: Record<string, any> = {}
+  let needsSecondCall = false
+
+  if (targetSistema && targetSistema.codigo !== usedSistema?.codigo) {
+    extraFields.sistemaAmortizacao = { codigo: targetSistema.codigo }
+    needsSecondCall = true
+  }
+
+  if (firstSeguradora) {
+    extraFields.seguradora = { codigo: firstSeguradora.codigo }
+    needsSecondCall = true
+  }
+
+  // If we found a preferred system or need to select a seguradora to get full data, call again
+  if (needsSecondCall) {
+    return doCall(extraFields)
+  }
+
+  return first
 }
