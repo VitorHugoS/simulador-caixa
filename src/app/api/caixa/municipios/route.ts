@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const preferredRegion = ['gru1']
+export const revalidate = 86400 // municípios por UF são estáticos; cache 24h
+
 export async function GET(request: NextRequest) {
   const sgUf = new URL(request.url).searchParams.get('sgUf')
   if (!sgUf) return NextResponse.json({ error: 'sgUf é obrigatório' }, { status: 400 })

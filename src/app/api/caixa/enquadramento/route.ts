@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const preferredRegion = ['gru1']
+
 const CAIXA_URL = 'https://app.novosimulador.caixa.gov.br/api/v1/simulacao/produtos-enquadramento-simulacao'
 
 const FIXED_PARAMS: Record<string, string> = {
