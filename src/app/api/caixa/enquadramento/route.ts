@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 export const runtime = 'edge'
 export const preferredRegion = ['gru1']
 
-const CAIXA_URL = 'https://app.novosimulador.caixa.gov.br/api/v1/simulacao/produtos-enquadramento-simulacao'
+const PROXY = 'https://worker-caixa.worker-caixa.workers.dev'
+const CAIXA_PATH = '/api/v1/simulacao/produtos-enquadramento-simulacao'
 
 const FIXED_PARAMS: Record<string, string> = {
   tipoPessoa: '1',
@@ -17,17 +18,6 @@ const FIXED_PARAMS: Record<string, string> = {
   possuoImovelMunicipio: 'N',
   subsidioFgtsUniao: 'N',
   tipoFinanciamento: '1',
-}
-
-const CAIXA_HEADERS = {
-  Authorization: 'Bearer undefined',
-  accept: 'application/json',
-  'accept-language': 'pt-BR,pt;q=0.9',
-  'content-type': 'application/json',
-  origin: 'https://simuladorhabitacao.caixa.gov.br',
-  referer: 'https://simuladorhabitacao.caixa.gov.br/',
-  'user-agent':
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36',
 }
 
 export async function GET(request: NextRequest) {
@@ -52,7 +42,7 @@ export async function GET(request: NextRequest) {
   })
 
   try {
-    const response = await fetch(`${CAIXA_URL}?${params}`, { headers: CAIXA_HEADERS })
+    const response = await fetch(`${PROXY}${CAIXA_PATH}?${params}`)
     if (!response.ok) {
       return NextResponse.json({ error: `Caixa API retornou ${response.status}` }, { status: response.status })
     }

@@ -1,25 +1,14 @@
 import { NextResponse } from 'next/server'
 
 export const runtime = 'edge'
-export const preferredRegion = ['gru1'] // São Paulo — próximo à API da Caixa
-export const revalidate = 86400 // lista de UFs não muda; cache 24h na CDN
+export const preferredRegion = ['gru1']
+export const revalidate = 86400
 
-const CAIXA_HEADERS = {
-  Authorization: 'Bearer undefined',
-  accept: 'application/json',
-  'accept-language': 'pt-BR,pt;q=0.9',
-  'content-type': 'application/json',
-  origin: 'https://simuladorhabitacao.caixa.gov.br',
-  referer: 'https://simuladorhabitacao.caixa.gov.br/',
-  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36',
-}
+const PROXY = 'https://worker-caixa.worker-caixa.workers.dev'
 
 export async function GET() {
   try {
-    const res = await fetch(
-      'https://app.novosimulador.caixa.gov.br/api/v1/lista-uf',
-      { headers: CAIXA_HEADERS }
-    )
+    const res = await fetch(`${PROXY}/api/v1/lista-uf`)
     if (!res.ok) return NextResponse.json({ error: `Caixa API retornou ${res.status}` }, { status: res.status })
     const data = await res.json()
     return NextResponse.json(data)
