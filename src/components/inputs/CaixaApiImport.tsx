@@ -29,9 +29,18 @@ export function CaixaApiImport({ state, onChange }: Props) {
   const [renda, setRenda] = useState('')
   const [valorImovel, setValorImovel] = useState('')
   const [valorEntrada, setValorEntrada] = useState('')
+  const [entradaTocada, setEntradaTocada] = useState(false)
   const [prazo, setPrazo] = useState(String(state.params.n))
   const [sistema, setSistema] = useState<Sistema>(state.params.sistema)
   const [dataNascimento, setDataNascimento] = useState('1980-01-01')
+
+  useEffect(() => {
+    if (entradaTocada) return
+    const imovelNum = parseFloat(valorImovel)
+    if (!imovelNum) return
+    const pct = sistema === 'sac' ? 0.20 : 0.30
+    setValorEntrada(String(Math.round(imovelNum * pct)))
+  }, [valorImovel, sistema]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const {
     ufs, municipiosFiltrados, municipiosLoading,
@@ -75,6 +84,17 @@ export function CaixaApiImport({ state, onChange }: Props) {
     }
     if (!selectedUF || !selectedMunicipio) {
       setError('Selecione o estado e a cidade do imóvel.')
+      return
+    }
+    if (prazoNum > 420) {
+      setError('O prazo máximo é de 420 meses.')
+      return
+    }
+    const entradaMinPct = sistema === 'sac' ? 0.20 : 0.30
+    const entradaMin = valorImovelNum * entradaMinPct
+    if (valorEntradaNum < entradaMin) {
+      const pct = sistema === 'sac' ? '20%' : '30%'
+      setError(`Entrada mínima para ${sistema.toUpperCase()} é ${pct} do valor do imóvel (R$ ${entradaMin.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}).`)
       return
     }
 
@@ -212,7 +232,7 @@ export function CaixaApiImport({ state, onChange }: Props) {
                   <InputField
                     label="Valor de entrada"
                     value={valorEntrada}
-                    onChange={setValorEntrada}
+                    onChange={(v) => { setEntradaTocada(true); setValorEntrada(v) }}
                     prefix="R$"
                     placeholder="90.000"
                     monetary
