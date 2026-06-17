@@ -8,7 +8,9 @@ const PROXY = 'https://worker-caixa.worker-caixa.workers.dev'
 
 export async function GET() {
   try {
-    const res = await fetch(`${PROXY}/api/v1/lista-uf`)
+    const res = await fetch(`${PROXY}/api/v1/lista-uf`, {
+      headers: { 'X-Internal-Token': process.env.INTERNAL_TOKEN ?? '' },
+    })
     if (!res.ok) return NextResponse.json({ error: `Caixa API retornou ${res.status}` }, { status: res.status })
     const data = await res.json()
     return NextResponse.json(data)

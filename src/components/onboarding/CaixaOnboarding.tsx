@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Params, Sistema } from '@/lib/engine/types'
 import { fetchEnquadramento, fetchSimulacao } from '@/lib/caixa/api'
 import { extractFromSimulacao } from '@/lib/caixa/extract'
@@ -22,6 +22,8 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [extracted, setExtracted] = useState<CaixaExtracted | null>(null)
+  const [rateLimitSecondsLeft, setRateLimitSecondsLeft] = useState(0)
+  const rateLimitRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const [renda, setRenda] = useState('')
   const [valorImovel, setValorImovel] = useState('')
@@ -114,6 +116,19 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
         municipioNome: selectedMunicipio.nome,
       }))
     } catch (e) {
+      const status = (e as { status?: number }).status
+      if (status === 429) {
+        let secs = 60
+        setRateLimitSecondsLeft(secs)
+        rateLimitRef.current = setInterval(() => {
+          secs -= 1
+          setRateLimitSecondsLeft(secs)
+          if (secs <= 0) {
+            clearInterval(rateLimitRef.current!)
+            rateLimitRef.current = null
+          }
+        }, 1000)
+      }
       setError(e instanceof Error ? e.message : 'Não foi possível conectar com a API da Caixa.')
       console.error(e)
     } finally {
@@ -281,10 +296,10 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
 
               <button
                 onClick={handleBuscar}
-                disabled={loading}
+                disabled={loading || rateLimitSecondsLeft > 0}
                 className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold transition-all"
               >
-                {loading ? 'Buscando…' : 'Buscar simulação'}
+                {loading ? 'Buscando…' : rateLimitSecondsLeft > 0 ? `Aguarde ${rateLimitSecondsLeft}s` : 'Buscar simulação'}
               </button>
             </>
           )}

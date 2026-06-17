@@ -11,6 +11,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const response = await fetch(`${PROXY}${CAIXA_PATH}`, {
       method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'X-Internal-Token': process.env.INTERNAL_TOKEN ?? '',
+        'X-Client-IP': request.ip ?? 'unknown',
+      },
       body: JSON.stringify(body),
     })
     if (!response.ok) {

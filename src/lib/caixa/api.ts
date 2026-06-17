@@ -33,7 +33,7 @@ export async function fetchEnquadramento(
   const res = await fetch(`/api/caixa/enquadramento?${params}`)
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err.error ?? `Enquadramento falhou: ${res.status}`)
+    throw Object.assign(new Error(err.error ?? `Enquadramento falhou: ${res.status}`), { status: res.status })
   }
   const data = await res.json()
   const list: CaixaProduto[] = Array.isArray(data)
@@ -81,7 +81,7 @@ export async function fetchSimulacao(
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
       const msg = err.errors?.[0]?.descricao ?? err.error ?? `Simulação falhou: ${res.status}`
-      throw new Error(msg)
+      throw Object.assign(new Error(msg), { status: res.status })
     }
     const data = await res.json()
     return data.simulacao ?? data

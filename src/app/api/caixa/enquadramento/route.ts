@@ -42,9 +42,18 @@ export async function GET(request: NextRequest) {
   })
 
   try {
-    const response = await fetch(`${PROXY}${CAIXA_PATH}?${params}`)
+    const response = await fetch(`${PROXY}${CAIXA_PATH}?${params}`, {
+      headers: {
+        'X-Internal-Token': process.env.INTERNAL_TOKEN ?? '',
+        'X-Client-IP': request.ip ?? 'unknown',
+      },
+    })
     if (!response.ok) {
-      return NextResponse.json({ error: `Caixa API retornou ${response.status}` }, { status: response.status })
+      const err = await response.json().catch(() => ({}))
+      return NextResponse.json(
+        err.error ? err : { error: `Caixa API retornou ${response.status}` },
+        { status: response.status },
+      )
     }
     const data = await response.json()
     return NextResponse.json(data)
