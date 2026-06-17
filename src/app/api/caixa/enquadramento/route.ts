@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     const response = await fetch(`${PROXY}${CAIXA_PATH}?${params}`, {
       headers: {
         'X-Internal-Token': process.env.INTERNAL_TOKEN ?? '',
-        'X-Client-IP': request.ip ?? 'unknown',
+        'X-Client-IP': request.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown',
       },
     })
     if (!response.ok) {

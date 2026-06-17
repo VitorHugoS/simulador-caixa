@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       headers: {
         'content-type': 'application/json',
         'X-Internal-Token': process.env.INTERNAL_TOKEN ?? '',
-        'X-Client-IP': request.ip ?? 'unknown',
+        'X-Client-IP': request.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown',
       },
       body: JSON.stringify(body),
     })
