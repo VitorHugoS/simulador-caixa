@@ -72,6 +72,19 @@ export function InputField({
     }
   }
 
+  function handleBlur() {
+    if (monetary) return
+    const num = parseFloat(localValue)
+    if (isNaN(num)) return
+    const clamped = max !== undefined && num > max ? max
+                  : min !== undefined && num < min ? min
+                  : num
+    if (clamped !== num) {
+      setLocalValue(String(clamped))
+      onChange(String(clamped))
+    }
+  }
+
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-1">
@@ -105,6 +118,7 @@ export function InputField({
           type={monetary ? 'tel' : type}
           value={localValue}
           onChange={(e) => handleChange(e.target.value)}
+          onBlur={handleBlur}
           placeholder={placeholder}
           min={monetary ? undefined : min}
           max={monetary ? undefined : max}
