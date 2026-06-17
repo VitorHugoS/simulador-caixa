@@ -170,6 +170,7 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
 
   const rows: { label: string; value: string | undefined }[] = [
     { label: 'Valor financiado', value: extracted?.raw.pv ? `R$ ${extracted.raw.pv}` : undefined },
+    { label: 'Valor de entrada', value: extracted?.raw.valorEntrada },
     { label: 'Prazo', value: extracted?.raw.n },
     { label: 'Juros efetivos', value: extracted?.raw.iAnual },
     { label: 'Sistema', value: extracted?.raw.sistema },

@@ -67,6 +67,7 @@ export interface CaixaExtracted {
   params: Partial<Params>
   raw: {
     pv?: string
+    valorEntrada?: string
     n?: string
     iAnual?: string
     sistema?: string

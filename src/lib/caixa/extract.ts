@@ -23,6 +23,11 @@ export function extractFromSimulacao(data: CaixaSimulacaoData, sistema: Sistema)
     result.warnings.push('Valor de financiamento não encontrado')
   }
 
+  // valorEntrada
+  if (data.valorEntrada) {
+    result.raw.valorEntrada = `R$ ${fmtBRL(parseAPI(data.valorEntrada))}`
+  }
+
   // n
   const prazoStr = data.prazoDesejavel ?? data.prazoMaximo
   if (prazoStr) {
