@@ -87,7 +87,10 @@ export async function fetchSimulacao(
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
-      const msg = err.errors?.[0]?.descricao ?? err.error ?? `Simulação falhou: ${res.status}`
+      const errorCode = err.errors?.[0]?.codigo
+      const msg = errorCode === '198'
+        ? 'Renda insuficiente. A parcela estimada compromete mais de 30% da sua renda mensal. Tente aumentar a renda, reduzir o valor financiado ou aumentar a entrada.'
+        : err.errors?.[0]?.descricao ?? err.error ?? `Simulação falhou: ${res.status}`
       throw Object.assign(new Error(msg), { status: res.status })
     }
     const data = await res.json()
