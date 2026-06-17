@@ -24,6 +24,7 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
   const [extracted, setExtracted] = useState<CaixaExtracted | null>(null)
   const [rateLimitSecondsLeft, setRateLimitSecondsLeft] = useState(0)
   const rateLimitRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [entradaAjustada, setEntradaAjustada] = useState<{ solicitada: number; ajustada: number; valorFinanciamento: number } | null>(null)
 
   const [renda, setRenda] = useState('')
   const [valorImovel, setValorImovel] = useState('')
@@ -122,6 +123,17 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
         ufImovel: selectedUF.coIbge,
         municipioImovel: selectedMunicipio.codigo,
       })
+
+      const apiEntrada = parseFloat(simulacaoData.valorEntrada ?? '0')
+      if (apiEntrada > 0 && Math.abs(apiEntrada - valorEntradaNum) > 1) {
+        setEntradaAjustada({
+          solicitada: valorEntradaNum,
+          ajustada: apiEntrada,
+          valorFinanciamento: parseFloat(simulacaoData.valorFinanciamento ?? '0'),
+        })
+      } else {
+        setEntradaAjustada(null)
+      }
 
       const result = extractFromSimulacao(simulacaoData, sistema)
       setExtracted(result)
@@ -342,6 +354,21 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
                   </div>
                 ))}
               </div>
+
+              {entradaAjustada && (
+                <div className="bg-orange-900/20 border border-orange-700/40 rounded-xl px-3 py-3 mb-4">
+                  <p className="text-xs text-orange-400 font-semibold mb-1">Entrada ajustada pela Caixa</p>
+                  <p className="text-xs text-orange-300">
+                    Sua entrada de{' '}
+                    <span className="font-medium">R$ {entradaAjustada.solicitada.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>{' '}
+                    foi ajustada para{' '}
+                    <span className="font-medium">R$ {entradaAjustada.ajustada.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>.
+                    {' '}Com sua renda, o máximo financiável é{' '}
+                    <span className="font-medium">R$ {entradaAjustada.valorFinanciamento.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>{' '}
+                    (parcela limitada a 30% da renda mensal).
+                  </p>
+                </div>
+              )}
 
               {extracted.warnings.length > 0 && (
                 <div className="bg-amber-900/20 border border-amber-800/40 rounded-xl px-3 py-2 mb-4">
