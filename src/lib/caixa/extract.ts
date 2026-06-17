@@ -46,7 +46,6 @@ export function extractFromSimulacao(data: CaixaSimulacaoData, sistema: Sistema)
 
   // mipRate + taxasFixas from first prestação (nested under seguradoras.seguradora[0])
   const prestacaoRaw = data.seguradoras?.seguradora?.[0]?.prestacoes?.prestacao
-  debugger
   // API returns a single object (not an array) for the first prestação
   const p1 = Array.isArray(prestacaoRaw) ? prestacaoRaw[0] : prestacaoRaw
 

@@ -1,6 +1,5 @@
 export type Sistema = 'price' | 'sac'
 export type EfeitoAporte = 'reduzir_prazo' | 'reduzir_parcela'
-export type TipoFGTS = 'amortizar_saldo' | 'abater_parcelas'
 export type ModoEntrada = 'proposta' | 'simular'
 
 export interface Params {
@@ -22,8 +21,7 @@ export interface EventoAporte {
   valor: number
   efeito: EfeitoAporte
   fgts: boolean
-  tipoFgts?: TipoFGTS
-  geradoPor: 'manual' | 'lote' | 'sac-transform' | 'override'
+  geradoPor: 'lote' | 'sac-transform' | 'override'
   grupoId?: string
 }
 

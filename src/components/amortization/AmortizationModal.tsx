@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { AppState, EventoAporte, EfeitoAporte, TipoFGTS } from '@/lib/engine/types'
+import { AppState, EventoAporte, EfeitoAporte } from '@/lib/engine/types'
 import { simular } from '@/lib/engine/simulation'
 import { gerarSACTransform } from '@/lib/engine/events'
 
@@ -46,7 +46,6 @@ export function AmortizationModal({ state, onApply, onClose, isSACTransform = fa
     toastRef.current = setTimeout(() => setToast(null), 3000)
   }
   const [fgts, setFgts] = useState(false)
-  const [tipoFgts, setTipoFgts] = useState<TipoFGTS>('amortizar_saldo')
 
   function toggleFgts() {
     const next = !fgts
@@ -67,7 +66,6 @@ export function AmortizationModal({ state, onApply, onClose, isSACTransform = fa
         valor: parseFloat(valor) || 0,
         efeito,
         fgts,
-        tipoFgts: fgts ? tipoFgts : undefined,
         geradoPor: 'lote' as const,
         grupoId: uid(),
       }]
@@ -185,18 +183,6 @@ export function AmortizationModal({ state, onApply, onClose, isSACTransform = fa
               )}
             </div>
 
-            {fgts && (
-              <div className="grid grid-cols-2 gap-2">
-                {(['amortizar_saldo', 'abater_parcelas'] as TipoFGTS[]).map((t) => (
-                  <button key={t} onClick={() => setTipoFgts(t)}
-                    className={`py-2.5 rounded-xl text-xs font-medium border transition-all ${
-                      tipoFgts === t ? 'bg-emerald-600 border-emerald-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-400'
-                    }`}>
-                    {t === 'amortizar_saldo' ? 'Reduzir saldo' : 'Pagar parcelas'}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
         )}
 

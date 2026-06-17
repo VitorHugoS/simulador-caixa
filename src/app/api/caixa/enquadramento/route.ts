@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export const runtime = 'edge'
 export const preferredRegion = ['gru1']
+export const revalidate = 3600
 
 const PROXY = 'https://worker-caixa.worker-caixa.workers.dev'
 const CAIXA_PATH = '/api/v1/simulacao/produtos-enquadramento-simulacao'

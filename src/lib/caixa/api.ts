@@ -42,10 +42,17 @@ export async function fetchEnquadramento(
   return list.map((p) => ({ ...p, codigo: String(p.codigo), versao: String(p.versao) }))
 }
 
+const _simCache = new Map<string, { data: CaixaSimulacaoData; ts: number }>()
+const SIM_TTL = 5 * 60 * 1000
+
 export async function fetchSimulacao(
   produto: CaixaProduto,
   input: CaixaApiInput,
 ): Promise<CaixaSimulacaoData> {
+  const cacheKey = JSON.stringify({ produto, input })
+  const hit = _simCache.get(cacheKey)
+  if (hit && Date.now() - hit.ts < SIM_TTL) return hit.data
+
   const baseSimulacao = {
     enquadramentoProduto: {
       codigo: '15',
@@ -108,15 +115,13 @@ export async function fetchSimulacao(
     needsSecondCall = true
   }
 
-  if (firstSeguradora) {
+  if (firstSeguradora && firstSeguradora.prestacoes?.prestacao == null) {
     extraFields.seguradora = { codigo: firstSeguradora.codigo }
     needsSecondCall = true
   }
 
   // If we found a preferred system or need to select a seguradora to get full data, call again
-  if (needsSecondCall) {
-    return doCall(extraFields)
-  }
-
-  return first
+  const result = needsSecondCall ? await doCall(extraFields) : first
+  _simCache.set(cacheKey, { data: result, ts: Date.now() })
+  return result
 }

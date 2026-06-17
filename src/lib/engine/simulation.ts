@@ -12,6 +12,7 @@ function simularSerie(params: Params, eventos: EventoAporte[]): SimOutput {
 
   let sd = params.pv
   let pmt = params.sistema === 'price' ? pmtPrice(params.pv, params.n, i) : 0
+  let amortSacMutavel = params.sistema === 'sac' ? r2(amortSAC(params.pv, params.n)) : 0
   let totalJuros = 0
   let totalPago = 0
 
@@ -22,7 +23,7 @@ function simularSerie(params: Params, eventos: EventoAporte[]): SimOutput {
     const juros = r2(sdInicio * i)
     const amortOrdBase =
       params.sistema === 'sac'
-        ? r2(amortSAC(params.pv, params.n))
+        ? amortSacMutavel
         : r2(pmt - juros)
 
     const eventosM = eventosDoMes(eventos, m)
@@ -36,7 +37,6 @@ function simularSerie(params: Params, eventos: EventoAporte[]): SimOutput {
       aporteExtra = overrideEv.valor
     } else {
       for (const ev of eventosM) {
-        if (ev.fgts && ev.tipoFgts === 'abater_parcelas') continue
         aporteExtra += ev.valor
       }
       if (isAutoFgtsMonth) {
@@ -72,12 +72,16 @@ function simularSerie(params: Params, eventos: EventoAporte[]): SimOutput {
     totalJuros += juros
     totalPago += parcelaBase + taxasTotal + aporteExtra
 
-    // Recalcular PMT na Price se efeito for reduzir_parcela
+    // Recalcular amortização se efeito for reduzir_parcela
     for (const ev of eventosM) {
-      if (ev.efeito === 'reduzir_parcela' && params.sistema === 'price') {
+      if (ev.efeito === 'reduzir_parcela') {
         const mesesRestantes = params.n - m
         if (mesesRestantes > 0) {
-          pmt = recalcPMT(sdFim, mesesRestantes, i)
+          if (params.sistema === 'price') {
+            pmt = recalcPMT(sdFim, mesesRestantes, i)
+          } else {
+            amortSacMutavel = r2(sdFim / mesesRestantes)
+          }
         }
       }
     }
@@ -93,13 +97,21 @@ function simularSerie(params: Params, eventos: EventoAporte[]): SimOutput {
   }
 }
 
-export function simular(params: Params, eventos: EventoAporte[]): SimResult {
-  // Baselines: sem FGTS automático e sem eventos manuais
+export function simularBaselines(params: Params): { pricePura: SimOutput; sacPura: SimOutput } {
   const baseline: Params = { ...params, fgtsDeposito: 0 }
-
   return {
     pricePura: simularSerie({ ...baseline, sistema: 'price' }, []),
     sacPura: simularSerie({ ...baseline, sistema: 'sac' }, []),
-    personalizado: simularSerie(params, eventos),
+  }
+}
+
+export function simularPersonalizado(params: Params, eventos: EventoAporte[]): SimOutput {
+  return simularSerie(params, eventos)
+}
+
+export function simular(params: Params, eventos: EventoAporte[]): SimResult {
+  return {
+    ...simularBaselines(params),
+    personalizado: simularPersonalizado(params, eventos),
   }
 }

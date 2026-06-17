@@ -9,7 +9,7 @@ const SESSION_KEY = 'finansim_eventos'
 
 function loadEventos(): EventoAporte[] {
   try {
-    const raw = sessionStorage.getItem(SESSION_KEY)
+    const raw = localStorage.getItem(SESSION_KEY)
     return raw ? JSON.parse(raw) : []
   } catch {
     return []
@@ -18,7 +18,7 @@ function loadEventos(): EventoAporte[] {
 
 function saveEventos(eventos: EventoAporte[]) {
   try {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(eventos))
+    localStorage.setItem(SESSION_KEY, JSON.stringify(eventos))
   } catch { /* storage full or SSR */ }
 }
 
@@ -43,7 +43,7 @@ export function useUrlState() {
     setStateInternal((prev) => {
       const updated = typeof next === 'function' ? next(prev) : next
 
-      // Persist events to sessionStorage immediately
+      // Persist events to localStorage immediately
       saveEventos(updated.eventos)
 
       // Debounce URL update (params only)
