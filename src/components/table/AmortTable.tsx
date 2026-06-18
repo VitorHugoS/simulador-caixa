@@ -11,10 +11,11 @@ function moeda(n: number): string {
 
 interface Props {
   serie: MesData[]
+  showCorrecao?: boolean
   onRowClick?: (row: MesData) => void
 }
 
-export function AmortTable({ serie, onRowClick }: Props) {
+export function AmortTable({ serie, showCorrecao = false, onRowClick }: Props) {
   const [page, setPage] = useState(0)
   const [open, setOpen] = useState(false)
 
@@ -22,12 +23,15 @@ export function AmortTable({ serie, onRowClick }: Props) {
   const slice = serie.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
   function exportCSV() {
-    const header = 'Mês,Juros,Amort.,Taxas,Parcela,Aporte,Total Pago,Saldo Devedor'
-    const rows = serie.map((m) =>
-      [m.mes, m.juros, m.amortOrd, m.taxas, m.parcela, m.aporteExtra, m.parcela + m.aporteExtra, m.sdFim]
+    const correcaoHeader = showCorrecao ? ',Correção TR' : ''
+    const header = `Mês,Juros${correcaoHeader},Amort.,Taxas,Parcela,Aporte,Total Pago,Saldo Devedor`
+    const rows = serie.map((m) => {
+      const correcaoCell = showCorrecao ? `,${m.correcaoMonetaria.toFixed(2)}` : ''
+      return [m.mes, m.juros, m.amortOrd, m.taxas, m.parcela, m.aporteExtra, m.parcela + m.aporteExtra, m.sdFim]
         .map((v) => typeof v === 'number' ? v.toFixed(2) : v)
         .join(',')
-    )
+        .replace(/^([^,]+,)/, `$1${correcaoCell.slice(1)},`)
+    })
     const csv = [header, ...rows].join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
@@ -37,6 +41,11 @@ export function AmortTable({ serie, onRowClick }: Props) {
     a.click()
     URL.revokeObjectURL(url)
   }
+
+  const baseHeaders = ['Mês', 'Juros', 'Amort.', 'Taxas', 'Parcela', 'Aporte', 'Total Pago', 'Saldo Devedor']
+  const headers = showCorrecao
+    ? ['Mês', 'Juros', 'Amort.', 'Taxas', 'Correção TR', 'Parcela', 'Aporte', 'Total Pago', 'Saldo Devedor']
+    : baseHeaders
 
   return (
     <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
@@ -65,7 +74,7 @@ export function AmortTable({ serie, onRowClick }: Props) {
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-y border-gray-800">
-                  {['Mês', 'Juros', 'Amort.', 'Taxas', 'Parcela', 'Aporte', 'Total Pago', 'Saldo Devedor'].map((h) => (
+                  {headers.map((h) => (
                     <th key={h} className={`px-3 py-2 text-left font-medium whitespace-nowrap ${
                       h === 'Parcela' || h === 'Aporte' || h === 'Total Pago' ? 'text-white/60' : 'text-gray-500'
                     }`}>{h}</th>
@@ -86,6 +95,11 @@ export function AmortTable({ serie, onRowClick }: Props) {
                     <td className="px-3 py-2 text-red-400 whitespace-nowrap">{moeda(m.juros)}</td>
                     <td className="px-3 py-2 text-blue-400 whitespace-nowrap">{moeda(m.amortOrd)}</td>
                     <td className="px-3 py-2 text-amber-400 whitespace-nowrap">{moeda(m.taxas)}</td>
+                    {showCorrecao && (
+                      <td className="px-3 py-2 text-orange-400 whitespace-nowrap">
+                        {m.correcaoMonetaria > 0 ? moeda(m.correcaoMonetaria) : '—'}
+                      </td>
+                    )}
                     <td className="px-3 py-2 text-white whitespace-nowrap font-medium">{moeda(m.parcela)}</td>
                     <td className="px-3 py-2 text-emerald-400 whitespace-nowrap">
                       {m.aporteExtra > 0 ? moeda(m.aporteExtra) : '—'}

@@ -30,6 +30,12 @@ export function InputPanel({ state, onChange }: Props) {
     onChange({ ...state, params: { ...params, iAnual: value / 100 } })
   }
 
+  function updateTrAnual(raw: string) {
+    const value = raw === '' ? 0 : parseFloat(raw)
+    if (isNaN(value)) return
+    onChange({ ...state, params: { ...params, trAnual: value / 100 } })
+  }
+
   function updateMipRate(raw: string) {
     const value = raw === '' ? 0 : parseFloat(raw)
     if (isNaN(value)) return
@@ -84,6 +90,20 @@ export function InputPanel({ state, onChange }: Props) {
               min={0.1}
               max={30}
               step={0.01}
+            />
+          </div>
+
+          <div className="lg:w-32">
+            <InputField
+              label="Correção (TR)"
+              tooltip="Taxa Referencial anual projetada. Contratos SAC/TR e PRICE/TR da Caixa corrigem o saldo todo mês por este índice. Bancos e o CET sempre usam 0%. Histórico: 2022 ≈ 1,4%, 2023 ≈ 1,9%, 2024 ≈ 1,4%."
+              value={String((params.trAnual * 100).toFixed(2))}
+              onChange={updateTrAnual}
+              suffix="% a.a."
+              placeholder="0.00"
+              min={0}
+              max={20}
+              step={0.1}
             />
           </div>
 

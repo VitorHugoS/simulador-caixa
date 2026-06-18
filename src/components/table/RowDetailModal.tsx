@@ -144,6 +144,12 @@ export function RowDetailModal({ row, state, onSave, onClose }: Props) {
               <p className="text-xs text-gray-500">Total parcela</p>
               <p className="text-sm font-semibold text-white">{moeda(row.parcela)}</p>
             </div>
+            {row.correcaoMonetaria > 0 && (
+              <div className="col-span-2">
+                <p className="text-xs text-gray-500">Correção TR</p>
+                <p className="text-sm font-semibold text-orange-400">{moeda(row.correcaoMonetaria)}</p>
+              </div>
+            )}
             {row.aporteExtra > 0 && (
               <div className="col-span-2">
                 <p className="text-xs text-gray-500">Aporte atual</p>

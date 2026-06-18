@@ -6,6 +6,7 @@ export interface Params {
   pv: number
   n: number
   iAnual: number
+  trAnual: number            // correção monetária anual (TR); contratos SAC/TR e PRICE/TR da Caixa usam este índice; bancos projetam com 0%
   taxasFixas: number         // DFI + taxa de administração (valor fixo mensal)
   mipRate: number            // MIP como % mensal do saldo devedor (ex: 0.0001159)
   sistema: Sistema
@@ -28,6 +29,7 @@ export interface EventoAporte {
 export interface MesData {
   mes: number
   sdInicio: number
+  correcaoMonetaria: number
   juros: number
   amortOrd: number
   aporteExtra: number
@@ -60,6 +62,7 @@ export const DEFAULTS_SIMULAR: Params = {
   pv: 300000,
   n: 360,
   iAnual: 0.1149,
+  trAnual: 0,
   taxasFixas: 60,
   mipRate: 0.00021,
   sistema: 'sac',

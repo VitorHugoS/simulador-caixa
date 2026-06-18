@@ -124,6 +124,7 @@ export function SimulatorClient() {
         {/* Tabela */}
         <AmortTable
           serie={result.personalizado.serie}
+          showCorrecao={state.params.trAnual > 0}
           onRowClick={(row) => setSelectedRow(row)}
         />
 

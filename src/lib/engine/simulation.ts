@@ -8,6 +8,7 @@ function r2(n: number): number {
 
 function simularSerie(params: Params, eventos: EventoAporte[]): SimOutput {
   const i = taxaMensal(params.iAnual)
+  const trMensal = params.trAnual > 0 ? Math.pow(1 + params.trAnual, 1 / 12) - 1 : 0
   const serie: MesData[] = []
 
   let sd = params.pv
@@ -18,6 +19,15 @@ function simularSerie(params: Params, eventos: EventoAporte[]): SimOutput {
 
   for (let m = 1; m <= params.n; m++) {
     if (sd <= 0) break
+
+    // Apply monthly monetary correction (TR) to the balance before any calculation
+    const correcaoMonetaria = trMensal > 0 ? r2(sd * trMensal) : 0
+    if (trMensal > 0) sd = r2(sd + correcaoMonetaria)
+
+    // PRICE + TR (prazo fixo): recalculate PMT on the corrected balance each period
+    if (params.sistema === 'price' && trMensal > 0) {
+      pmt = recalcPMT(sd, params.n - m + 1, i)
+    }
 
     const sdInicio = r2(sd)
     const juros = r2(sdInicio * i)
@@ -60,6 +70,7 @@ function simularSerie(params: Params, eventos: EventoAporte[]): SimOutput {
     serie.push({
       mes: m,
       sdInicio,
+      correcaoMonetaria,
       juros,
       amortOrd: amortOrdBase,
       aporteExtra,
