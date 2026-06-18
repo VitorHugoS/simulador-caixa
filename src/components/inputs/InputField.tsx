@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { InfoIcon } from '@/components/ui/icons'
 
 interface Props {
   label: string
@@ -97,10 +98,10 @@ export function InputField({
               onMouseLeave={() => setShowTooltip(false)}
               onFocus={() => setShowTooltip(true)}
               onBlur={() => setShowTooltip(false)}
-              className="text-gray-600 hover:text-gray-400 text-xs leading-none w-4 h-4 rounded-full border border-gray-600 hover:border-gray-400 flex items-center justify-center transition-colors"
+              className="text-gray-600 hover:text-gray-400 w-4 h-4 flex items-center justify-center transition-colors cursor-pointer"
               aria-label="Mais informações"
             >
-              ?
+              <InfoIcon className="w-4 h-4" />
             </button>
             {showTooltip && (
               <div className="absolute top-6 left-0 z-50 w-56 bg-gray-800 border border-gray-700 rounded-lg p-3 text-xs text-gray-300 shadow-xl">

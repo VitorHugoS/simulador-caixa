@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { XIcon } from '@/components/ui/icons'
 import { AppState, EventoAporte, EfeitoAporte } from '@/lib/engine/types'
 import { simular } from '@/lib/engine/simulation'
 import { gerarSACTransform } from '@/lib/engine/events'
@@ -91,7 +92,7 @@ export function AmortizationModal({ state, onApply, onClose, isSACTransform = fa
           <h2 className="text-white font-semibold text-lg">
             {isSACTransform ? 'Transformar Price em SAC' : 'Adicionar amortização'}
           </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-300 text-xl leading-none">×</button>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-all cursor-pointer"><XIcon className="w-4 h-4" /></button>
         </div>
 
         {!isSACTransform && (

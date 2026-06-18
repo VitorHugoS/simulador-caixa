@@ -3,6 +3,15 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Design system — Comparative Analysis Dashboard */
+  --color-positive:   #22C55E;
+  --color-negative:   #EF4444;
+  --color-neutral:    #6B7280;
+  --color-primary:    #3B82F6;
+  --color-comparison: #F97316;
+  --badge-padding:    4px 8px;
+  --arrow-size:       16px;
 }
 
 @theme inline {

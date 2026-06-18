@@ -6,6 +6,7 @@ import { fetchEnquadramento, fetchSimulacao } from '@/lib/caixa/api'
 import { extractFromSimulacao } from '@/lib/caixa/extract'
 import { useLocalidade } from '@/lib/caixa/useLocalidade'
 import type { CaixaExtracted } from '@/lib/caixa/types'
+import { MapPinIcon, CheckCircleIcon, XIcon } from '@/components/ui/icons'
 import { InputField } from '@/components/inputs/InputField'
 
 const CACHE_KEY = 'caixa_perfil'
@@ -226,12 +227,12 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
                   <div className="flex items-center justify-between">
                     <label className="text-sm text-gray-300 font-medium">Estado (UF)</label>
                     {geoAvailable && geoStatus === 'idle' && (
-                      <button onClick={requestGeo} className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
-                        📍 Detectar localização
+                      <button onClick={requestGeo} className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors cursor-pointer">
+                        <MapPinIcon className="w-3.5 h-3.5" /> Detectar localização
                       </button>
                     )}
                     {geoStatus === 'detecting' && <span className="text-xs text-blue-400 animate-pulse">Detectando…</span>}
-                    {geoStatus === 'done' && <span className="text-xs text-green-500">✓ Localização detectada</span>}
+                    {geoStatus === 'done' && <span className="inline-flex items-center gap-1 text-xs text-green-500"><CheckCircleIcon className="w-3.5 h-3.5" /> Localização detectada</span>}
                     {geoStatus === 'denied' && <span className="text-xs text-red-400">Localização negada</span>}
                   </div>
                   <select
@@ -254,8 +255,8 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
                       <span className="text-white text-sm">{selectedMunicipio.nome}</span>
                       <button
                         onClick={() => { setSelectedMunicipio(null); setMunicipioSearch('') }}
-                        className="text-gray-500 hover:text-gray-300 text-lg leading-none ml-2"
-                      >×</button>
+                        className="p-1 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-all cursor-pointer ml-2 flex-shrink-0"
+                      ><XIcon className="w-3.5 h-3.5" /></button>
                     </div>
                   ) : (
                     <div className="relative">

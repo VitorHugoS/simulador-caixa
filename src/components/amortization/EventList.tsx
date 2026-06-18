@@ -1,5 +1,6 @@
 'use client'
 
+import { XIcon } from '@/components/ui/icons'
 import { EventoAporte, Params } from '@/lib/engine/types'
 
 function moeda(n: number): string {
@@ -111,9 +112,9 @@ export function EventList({
             </div>
             <button
               onClick={() => onRemoveGrupo(grupoId)}
-              className="text-gray-600 hover:text-red-400 transition-colors ml-3 text-lg leading-none"
+              className="p-1.5 rounded-lg text-gray-600 hover:text-red-400 hover:bg-gray-700 transition-all cursor-pointer ml-2 flex-shrink-0"
             >
-              ×
+              <XIcon className="w-4 h-4" />
             </button>
           </div>
         )

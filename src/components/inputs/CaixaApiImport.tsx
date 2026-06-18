@@ -6,6 +6,7 @@ import { fetchEnquadramento, fetchSimulacao } from '@/lib/caixa/api'
 import { extractFromSimulacao } from '@/lib/caixa/extract'
 import { useLocalidade } from '@/lib/caixa/useLocalidade'
 import type { CaixaExtracted } from '@/lib/caixa/types'
+import { BuildingIcon, MapPinIcon, CheckCircleIcon, XIcon } from '@/components/ui/icons'
 import { InputField } from './InputField'
 
 const CACHE_KEY = 'caixa_perfil'
@@ -200,9 +201,9 @@ export function CaixaApiImport({ state, onChange }: Props) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="self-end text-xs text-blue-400 hover:text-blue-300 transition-colors pb-2.5 whitespace-nowrap"
+        className="self-end inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors pb-2.5 whitespace-nowrap cursor-pointer"
       >
-        🏦 Simular pela Caixa
+        <BuildingIcon className="w-3.5 h-3.5" /> Simular pela Caixa
       </button>
 
       {open && (
@@ -221,7 +222,7 @@ export function CaixaApiImport({ state, onChange }: Props) {
                     : 'Revise os valores antes de aplicar'}
                 </p>
               </div>
-              <button onClick={handleClose} className="text-gray-500 hover:text-gray-300 text-xl leading-none">×</button>
+              <button onClick={handleClose} className="p-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-all cursor-pointer"><XIcon className="w-4 h-4" /></button>
             </div>
 
             {etapa === 'form' && (
@@ -257,12 +258,12 @@ export function CaixaApiImport({ state, onChange }: Props) {
                     <div className="flex items-center justify-between">
                       <label className="text-sm text-gray-300 font-medium">Estado (UF)</label>
                       {geoAvailable && geoStatus === 'idle' && (
-                        <button onClick={requestGeo} className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
-                          📍 Detectar localização
+                        <button onClick={requestGeo} className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors cursor-pointer">
+                          <MapPinIcon className="w-3.5 h-3.5" /> Detectar localização
                         </button>
                       )}
                       {geoStatus === 'detecting' && <span className="text-xs text-blue-400 animate-pulse">Detectando…</span>}
-                      {geoStatus === 'done' && <span className="text-xs text-green-500">✓ Localização detectada</span>}
+                      {geoStatus === 'done' && <span className="inline-flex items-center gap-1 text-xs text-green-500"><CheckCircleIcon className="w-3.5 h-3.5" /> Localização detectada</span>}
                       {geoStatus === 'denied' && <span className="text-xs text-red-400">Localização negada</span>}
                     </div>
                     <select
@@ -285,8 +286,8 @@ export function CaixaApiImport({ state, onChange }: Props) {
                         <span className="text-white text-sm">{selectedMunicipio.nome}</span>
                         <button
                           onClick={() => { setSelectedMunicipio(null); setMunicipioSearch('') }}
-                          className="text-gray-500 hover:text-gray-300 text-lg leading-none ml-2"
-                        >×</button>
+                          className="p-1 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-all cursor-pointer ml-2 flex-shrink-0"
+                        ><XIcon className="w-3.5 h-3.5" /></button>
                       </div>
                     ) : (
                       <div className="relative">

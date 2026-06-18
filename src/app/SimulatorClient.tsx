@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useUrlState } from '@/lib/hooks/useUrlState'
 import { useSimulator } from '@/lib/hooks/useSimulator'
 import { EventoAporte, MesData } from '@/lib/engine/types'
+import { LinkIcon, CheckIcon } from '@/components/ui/icons'
 import { CaixaOnboarding } from '@/components/onboarding/CaixaOnboarding'
 import { InputPanel } from '@/components/inputs/InputPanel'
 import { KPICards } from '@/components/kpis/KPICards'
@@ -84,9 +85,12 @@ export function SimulatorClient() {
           <span className="text-white font-bold text-sm">FinanSim</span>
           <button
             onClick={copyLink}
-            className="text-xs px-3 py-1.5 rounded-lg border border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white transition-all"
+            className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white transition-all cursor-pointer"
           >
-            {copied ? '✓ Copiado!' : '🔗 Compartilhar'}
+            {copied
+              ? <><CheckIcon className="w-3.5 h-3.5 text-green-400" /> <span className="text-green-400">Copiado!</span></>
+              : <><LinkIcon className="w-3.5 h-3.5" /> Compartilhar</>
+            }
           </button>
         </div>
       </div>

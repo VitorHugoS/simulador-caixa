@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ChevronUpIcon, ChevronDownIcon, ArrowLeftIcon, ArrowRightIcon } from '@/components/ui/icons'
 import { MesData } from '@/lib/engine/types'
 
 const PAGE_SIZE = 50
@@ -56,7 +57,7 @@ export function AmortTable({ serie, showCorrecao = false, onRowClick }: Props) {
         <span className="text-sm font-semibold text-white">
           Tabela mês a mês ({serie.length} meses)
         </span>
-        <span className="text-gray-500 text-sm">{open ? '▲' : '▼'}</span>
+        {open ? <ChevronUpIcon className="w-4 h-4 text-gray-500" /> : <ChevronDownIcon className="w-4 h-4 text-gray-500" />}
       </button>
 
       {open && (
@@ -89,8 +90,10 @@ export function AmortTable({ serie, showCorrecao = false, onRowClick }: Props) {
                     className={`border-b border-gray-800/50 cursor-pointer ${m.temEvento ? 'bg-emerald-900/10 hover:bg-emerald-900/20' : 'hover:bg-gray-800/40'}`}
                   >
                     <td className="px-3 py-2 text-gray-300 font-medium">
-                      {m.mes}
-                      {m.temEvento && <span className="ml-1 text-emerald-400">★</span>}
+                      <span className="inline-flex items-center gap-1">
+                        {m.mes}
+                        {m.temEvento && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />}
+                      </span>
                     </td>
                     <td className="px-3 py-2 text-red-400 whitespace-nowrap">{moeda(m.juros)}</td>
                     <td className="px-3 py-2 text-blue-400 whitespace-nowrap">{moeda(m.amortOrd)}</td>
@@ -119,9 +122,9 @@ export function AmortTable({ serie, showCorrecao = false, onRowClick }: Props) {
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0}
-                className="text-xs px-3 py-1.5 bg-gray-800 rounded-lg text-gray-400 disabled:opacity-30 hover:text-white transition-all"
+                className="inline-flex items-center gap-1 text-xs px-3 py-1.5 bg-gray-800 rounded-lg text-gray-400 disabled:opacity-30 hover:text-white transition-all cursor-pointer"
               >
-                ← Anterior
+                <ArrowLeftIcon className="w-3.5 h-3.5" /> Anterior
               </button>
               <span className="text-xs text-gray-500">
                 Página {page + 1} de {totalPages}
@@ -129,9 +132,9 @@ export function AmortTable({ serie, showCorrecao = false, onRowClick }: Props) {
               <button
                 onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={page === totalPages - 1}
-                className="text-xs px-3 py-1.5 bg-gray-800 rounded-lg text-gray-400 disabled:opacity-30 hover:text-white transition-all"
+                className="inline-flex items-center gap-1 text-xs px-3 py-1.5 bg-gray-800 rounded-lg text-gray-400 disabled:opacity-30 hover:text-white transition-all cursor-pointer"
               >
-                Próxima →
+                Próxima <ArrowRightIcon className="w-3.5 h-3.5" />
               </button>
             </div>
           )}

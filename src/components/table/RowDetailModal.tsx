@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { XIcon } from '@/components/ui/icons'
 import { AppState, EventoAporte, MesData } from '@/lib/engine/types'
 import { simular } from '@/lib/engine/simulation'
 
@@ -121,7 +122,7 @@ export function RowDetailModal({ row, state, onSave, onClose }: Props) {
               {isEditing ? 'Alterar aporte' : 'Adicionar aporte'}
             </p>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-300 text-xl leading-none">×</button>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-all cursor-pointer"><XIcon className="w-4 h-4" /></button>
         </div>
 
         {/* Parcela deste mês */}
