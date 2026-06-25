@@ -199,11 +199,15 @@ export function CaixaApiImport({ state, onChange }: Props) {
 
   return (
     <>
+      {/* FAB fixo — sempre visível independente do scroll */}
       <button
         onClick={() => setOpen(true)}
-        className="self-end inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors pb-2.5 whitespace-nowrap cursor-pointer"
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-sm font-medium px-4 py-3 rounded-2xl shadow-lg shadow-blue-900/40 transition-all duration-200 cursor-pointer"
+        aria-label="Simular pela Caixa"
       >
-        <BuildingIcon className="w-3.5 h-3.5" /> Simular pela Caixa
+        <BuildingIcon className="w-4 h-4 flex-shrink-0" />
+        <span className="hidden sm:inline">Simular pela Caixa</span>
+        <span className="sm:hidden">Caixa</span>
       </button>
 
       {open && (

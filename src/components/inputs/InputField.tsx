@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { InfoIcon } from '@/components/ui/icons'
 
 interface Props {
@@ -67,6 +67,19 @@ export function InputField({
     isFocusedRef.current = true
   }
 
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const propagate = useCallback((raw: string) => {
+    const trimmed = raw.trim().replace(',', '.')
+    const num = parseFloat(trimmed)
+    if (isNaN(num)) return
+    const clamped =
+      max !== undefined && num > max ? max
+      : min !== undefined && num < min ? min
+      : num
+    onChange(String(clamped))
+  }, [onChange, min, max])
+
   function handleChange(raw: string) {
     if (monetary) {
       const digits = raw.replace(/\D/g, '')
@@ -74,13 +87,14 @@ export function InputField({
         ? parseInt(digits, 10).toLocaleString('pt-BR', { maximumFractionDigits: 0 })
         : ''
       setLocalValue(formatted)
-      // Para monetário, atualiza em tempo real (o valor é só dígitos, sem conflito de formato)
+      // Monetário: atualiza em tempo real (sem conflito de formato)
       onChange(digits)
     } else {
-      // Para campos numéricos (taxa, prazo, etc.), apenas atualiza local.
-      // O parent só recebe o valor no blur, evitando o "cabo de guerra"
-      // que acontece quando o usuário digita e o React re-formata imediatamente.
+      // Numérico: atualiza local imediatamente (não briga com o usuário)
+      // e dispara o recálculo com debounce de 400ms
       setLocalValue(raw)
+      clearTimeout(debounceRef.current!)
+      debounceRef.current = setTimeout(() => propagate(raw), 400)
     }
   }
 
@@ -89,16 +103,18 @@ export function InputField({
 
     if (monetary) return
 
+    // Cancela debounce pendente — o blur propaga o valor final imediatamente
+    clearTimeout(debounceRef.current!)
+    debounceRef.current = null
+
     const trimmed = localValue.trim()
 
     if (trimmed === '' || trimmed === '-') {
-      // Campo vazio: propaga 0 e restaura o display
       onChange('0')
       setLocalValue('0')
       return
     }
 
-    // Usa vírgula como separador decimal (comum no mobile BR)
     const normalized = trimmed.replace(',', '.')
     const num = parseFloat(normalized)
 
@@ -108,7 +124,6 @@ export function InputField({
       return
     }
 
-    // Clampea dentro dos limites definidos
     const clamped =
       max !== undefined && num > max ? max
       : min !== undefined && num < min ? min

@@ -179,8 +179,6 @@ export function InputPanel({ state, onChange }: Props) {
               </span>
             </div>
           </div>
-
-          <CaixaApiImport state={state} onChange={onChange} />
         </div>
 
         {/* Subtexto sistema */}
@@ -230,6 +228,9 @@ export function InputPanel({ state, onChange }: Props) {
           </div>
         </div>
       )}
+
+      {/* FAB + modal da simulação Caixa — renderizado fora do layout de inputs */}
+      <CaixaApiImport state={state} onChange={onChange} />
     </div>
   )
 }
