@@ -44,45 +44,85 @@ export function InputField({
   monetary = false,
 }: Props) {
   const [showTooltip, setShowTooltip] = useState(false)
-  const [localValue, setLocalValue] = useState(() =>
-    monetary ? monetaryFromNumber(Number(value)) : String(value)
-  )
-  const externalRef = useRef(String(value))
-  const onChangeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Enquanto o campo está focado, o usuário é "dono" do valor.
+  // Só sincronizamos com o prop `value` quando o campo está desfocado,
+  // evitando o conflito de autocomplete / re-render no meio da digitação.
+  const isFocusedRef = useRef(false)
+
+  const formattedExternal = monetary
+    ? monetaryFromNumber(Number(value))
+    : String(value)
+
+  const [localValue, setLocalValue] = useState(formattedExternal)
+
+  // Sincroniza com o parent apenas quando não está sendo editado
   useEffect(() => {
-    const next = String(value)
-    if (next !== externalRef.current) {
-      externalRef.current = next
-      setLocalValue(monetary ? monetaryFromNumber(Number(value)) : next)
+    if (!isFocusedRef.current) {
+      setLocalValue(formattedExternal)
     }
-  }, [value, monetary])
+  }, [formattedExternal])
+
+  function handleFocus() {
+    isFocusedRef.current = true
+  }
 
   function handleChange(raw: string) {
     if (monetary) {
       const digits = raw.replace(/\D/g, '')
-      const formatted = digits ? parseInt(digits, 10).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : ''
+      const formatted = digits
+        ? parseInt(digits, 10).toLocaleString('pt-BR', { maximumFractionDigits: 0 })
+        : ''
       setLocalValue(formatted)
-      externalRef.current = digits
-      // Defer parent update by one tick so Android IME composition ends before React re-renders
-      clearTimeout(onChangeTimerRef.current!)
-      onChangeTimerRef.current = setTimeout(() => onChange(digits), 0)
+      // Para monetário, atualiza em tempo real (o valor é só dígitos, sem conflito de formato)
+      onChange(digits)
     } else {
+      // Para campos numéricos (taxa, prazo, etc.), apenas atualiza local.
+      // O parent só recebe o valor no blur, evitando o "cabo de guerra"
+      // que acontece quando o usuário digita e o React re-formata imediatamente.
       setLocalValue(raw)
-      onChange(raw)
     }
   }
 
   function handleBlur() {
+    isFocusedRef.current = false
+
     if (monetary) return
-    const num = parseFloat(localValue)
-    if (isNaN(num)) return
-    const clamped = max !== undefined && num > max ? max
-                  : min !== undefined && num < min ? min
-                  : num
-    if (clamped !== num) {
-      setLocalValue(String(clamped))
-      onChange(String(clamped))
+
+    const trimmed = localValue.trim()
+
+    if (trimmed === '' || trimmed === '-') {
+      // Campo vazio: propaga 0 e restaura o display
+      onChange('0')
+      setLocalValue('0')
+      return
+    }
+
+    // Usa vírgula como separador decimal (comum no mobile BR)
+    const normalized = trimmed.replace(',', '.')
+    const num = parseFloat(normalized)
+
+    if (isNaN(num)) {
+      // Valor inválido: volta para o que o parent tem
+      setLocalValue(String(value))
+      return
+    }
+
+    // Clampea dentro dos limites definidos
+    const clamped =
+      max !== undefined && num > max ? max
+      : min !== undefined && num < min ? min
+      : num
+
+    const final = String(clamped)
+    setLocalValue(final)
+    onChange(final)
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    // Confirma edição ao pressionar Enter (boa prática em formulários)
+    if (e.key === 'Enter') {
+      ;(e.target as HTMLInputElement).blur()
     }
   }
 
@@ -116,14 +156,14 @@ export function InputField({
           <span className="px-3 text-gray-500 text-sm border-r border-gray-700 py-3">{prefix}</span>
         )}
         <input
-          type={monetary ? 'tel' : type}
+          type={monetary ? 'tel' : type === 'number' ? 'text' : type}
+          inputMode={type === 'number' || monetary ? 'decimal' : undefined}
           value={localValue}
           onChange={(e) => handleChange(e.target.value)}
+          onFocus={handleFocus}
           onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          min={monetary ? undefined : min}
-          max={monetary ? undefined : max}
-          step={monetary ? undefined : step}
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="off"

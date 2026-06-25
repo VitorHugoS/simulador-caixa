@@ -1,11 +1,11 @@
 'use client'
 
 import { SimResult } from '@/lib/engine/types'
-import { TrendingDownIcon, CheckIcon } from '@/components/ui/icons'
+import { TrendingDownIcon, TrendingUpIcon, CheckIcon } from '@/components/ui/icons'
 
 function moeda(n: number): string {
-  if (n >= 1_000_000) return `R$ ${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `R$ ${(n / 1_000).toFixed(0)}k`
+  if (n >= 1_000_000) return `R$ ${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `R$ ${(n / 1_000).toFixed(0)}k`
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
 }
 
@@ -14,25 +14,33 @@ function meses(n: number): string {
   const m = n % 12
   if (anos === 0) return `${m}m`
   if (m === 0) return `${anos}a`
-  return `${anos}a ${m}m`
+  return `${anos}a ${m}m`
 }
 
 interface Props {
   result: SimResult
   hasEvents: boolean
   sistema: import('@/lib/engine/types').Sistema
+  prazoContratado: number
 }
 
 interface RowConfig {
   label: string
   values: [number, number, number]
   format: (n: number) => string
+  /** Se true, o maior valor é o melhor (ex: economia de prazo). Padrão: false (menor = melhor) */
+  higherIsBetter?: boolean
+  /** Se true, não destaca winner quando todos os valores forem 0 */
+  skipIfAllZero?: boolean
 }
 
-function DeltaBadge({ pct }: { pct: number }) {
+function DeltaBadge({ pct, up = false }: { pct: number; up?: boolean }) {
   return (
     <span className="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-md bg-green-500/10 border border-green-500/20 text-green-400 font-medium whitespace-nowrap">
-      <TrendingDownIcon className="w-3 h-3" />
+      {up
+        ? <TrendingUpIcon className="w-3 h-3" />
+        : <TrendingDownIcon className="w-3 h-3" />
+      }
       {pct.toFixed(0)}%
     </span>
   )
@@ -46,8 +54,13 @@ function WinnerCheck() {
   )
 }
 
-export function KPICards({ result, hasEvents }: Props) {
+export function KPICards({ result, hasEvents, prazoContratado }: Props) {
   const { personalizado, pricePura, sacPura } = result
+
+  // Economia de prazo = prazo contratado − prazo real (meses economizados)
+  const economiaSac   = prazoContratado - sacPura.prazoReal
+  const economiaPrice = prazoContratado - pricePura.prazoReal
+  const economiaPerso = prazoContratado - personalizado.prazoReal
 
   const rows: RowConfig[] = [
     {
@@ -64,6 +77,13 @@ export function KPICards({ result, hasEvents }: Props) {
       label: 'Prazo real',
       values: [sacPura.prazoReal, pricePura.prazoReal, personalizado.prazoReal],
       format: meses,
+    },
+    {
+      label: 'Economia de prazo',
+      values: [economiaSac, economiaPrice, economiaPerso],
+      format: (n: number) => n > 0 ? meses(n) : '—',
+      higherIsBetter: true,
+      skipIfAllZero: true,
     },
   ]
 
@@ -87,8 +107,17 @@ export function KPICards({ result, hasEvents }: Props) {
 
       {/* Rows */}
       {rows.map((row, ri) => {
-        const minVal = Math.min(...row.values)
-        const secondMin = [...row.values].sort((a, b) => a - b)[1]
+        const allZero = row.values.every((v) => v === 0)
+        const skipWinner = row.skipIfAllZero && allZero
+
+        // Para "maior é melhor", winner = maxVal; senão winner = minVal
+        const bestVal = row.higherIsBetter
+          ? Math.max(...row.values)
+          : Math.min(...row.values)
+
+        // Segunda melhor referência para calcular % de diferença
+        const sorted = [...row.values].sort((a, b) => row.higherIsBetter ? b - a : a - b)
+        const secondBest = sorted[1]
 
         return (
           <div
@@ -102,8 +131,10 @@ export function KPICards({ result, hasEvents }: Props) {
 
             {/* Valores */}
             {row.values.map((val, ci) => {
-              const isWinner = val === minVal
-              const pct = secondMin > 0 ? ((secondMin - minVal) / secondMin) * 100 : 0
+              const isWinner = !skipWinner && val === bestVal
+              const pct = row.higherIsBetter
+                ? (secondBest > 0 ? ((bestVal - secondBest) / secondBest) * 100 : 0)
+                : (secondBest > 0 ? ((secondBest - bestVal) / secondBest) * 100 : 0)
               const showBadge = isWinner && hasEvents && pct > 0.5
 
               return (
@@ -123,7 +154,7 @@ export function KPICards({ result, hasEvents }: Props) {
                       {row.format(val)}
                     </span>
                   </div>
-                  {showBadge && <DeltaBadge pct={pct} />}
+                  {showBadge && <DeltaBadge pct={pct} up={row.higherIsBetter} />}
                 </div>
               )
             })}

@@ -108,6 +108,15 @@ export function TrendingDownIcon(props: IconProps) {
   )
 }
 
+export function TrendingUpIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18 9 11.25l4.286 4.286a11.948 11.948 0 0 1 4.306-6.43l.776-2.898m0 0 3.182 5.511m-3.182-5.511-5.511 3.182" />
+    </svg>
+  )
+}
+
+
 export function StarIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>

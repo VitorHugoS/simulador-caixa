@@ -104,6 +104,7 @@ export function SimulatorClient() {
           result={result}
           hasEvents={state.eventos.length > 0 || state.params.fgtsDeposito > 0}
           sistema={state.params.sistema}
+          prazoContratado={state.params.n}
         />
 
         {/* Gráficos */}
