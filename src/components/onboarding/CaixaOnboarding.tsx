@@ -5,8 +5,8 @@ import { Params, Sistema } from '@/lib/engine/types'
 import { fetchEnquadramento, fetchSimulacao } from '@/lib/caixa/api'
 import { extractFromSimulacao } from '@/lib/caixa/extract'
 import { useLocalidade } from '@/lib/caixa/useLocalidade'
-import type { CaixaExtracted } from '@/lib/caixa/types'
-import { MapPinIcon, CheckCircleIcon, XIcon } from '@/components/ui/icons'
+import type { CaixaExtracted, CaixaProduto } from '@/lib/caixa/types'
+import { MapPinIcon, CheckCircleIcon, XIcon, ChevronRightIcon } from '@/components/ui/icons'
 import { InputField } from '@/components/inputs/InputField'
 
 const CACHE_KEY = 'caixa_perfil'
@@ -16,7 +16,7 @@ interface Props {
   onSkip: () => void
 }
 
-type Etapa = 'form' | 'preview'
+type Etapa = 'form' | 'produtos' | 'preview'
 
 export function CaixaOnboarding({ onComplete, onSkip }: Props) {
   const [etapa, setEtapa] = useState<Etapa>('form')
@@ -25,7 +25,24 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
   const [extracted, setExtracted] = useState<CaixaExtracted | null>(null)
   const [rateLimitSecondsLeft, setRateLimitSecondsLeft] = useState(0)
   const rateLimitRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const isRunningRef = useRef(false)
   const [entradaAjustada, setEntradaAjustada] = useState<{ solicitada: number; ajustada: number; valorFinanciamento: number } | null>(null)
+
+  // Enquadramento
+  const [produtos, setProdutos] = useState<CaixaProduto[]>([])
+  const [selectedProduto, setSelectedProduto] = useState<CaixaProduto | null>(null)
+  const inputCacheRef = useRef<{ rendaNum: number; valorImovelNum: number; valorEntradaNum: number; prazoNum: number; dataNascimentoAPI: string } | null>(null)
+
+  // Toasts
+  const [toasts, setToasts] = useState<{ id: number; message: string }[]>([])
+  const toastTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+
+  function addToast(message: string) {
+    const id = Date.now()
+    setToasts((prev) => [...prev, { id, message }])
+    const timer = setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 5000)
+    toastTimersRef.current.push(timer)
+  }
 
   const [renda, setRenda] = useState('')
   const [valorImovel, setValorImovel] = useState('')
@@ -36,6 +53,14 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
   const [dataNascimento, setDataNascimento] = useState('1980-01-01')
   const [tipoFinanciamento, setTipoFinanciamento] = useState('1') // Residencial
   const [categoriaImovel, setCategoriaImovel] = useState('2')    // Construção
+
+  // Cleanup ao desmontar
+  useEffect(() => {
+    return () => {
+      if (rateLimitRef.current) clearInterval(rateLimitRef.current)
+      toastTimersRef.current.forEach(clearTimeout)
+    }
+  }, [])
 
   useEffect(() => {
     if (entradaTocada) return
@@ -64,15 +89,29 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
         if (p.dataNascimento) setDataNascimento(p.dataNascimento)
         if (p.ufSgUf) {
           loadFromCache({ ufSgUf: p.ufSgUf, municipioCodigo: p.municipioCodigo, municipioNome: p.municipioNome })
-          return // has cached location, skip auto-geo
+          return
         }
       }
     } catch { /* ignore */ }
-    // Auto-detect only if permission already granted — no dialog, no interaction block
     tryAutoGeo()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  function startRateLimit() {
+    if (rateLimitRef.current) clearInterval(rateLimitRef.current)
+    let secs = 60
+    setRateLimitSecondsLeft(secs)
+    rateLimitRef.current = setInterval(() => {
+      secs -= 1
+      setRateLimitSecondsLeft(secs)
+      if (secs <= 0) {
+        clearInterval(rateLimitRef.current!)
+        rateLimitRef.current = null
+      }
+    }, 1000)
+  }
+
   async function handleBuscar() {
+    if (isRunningRef.current) return
     const rendaNum = parseFloat(renda)
     const valorImovelNum = parseFloat(valorImovel)
     const valorEntradaNum = parseFloat(valorEntrada)
@@ -103,47 +142,22 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
 
     setLoading(true)
     setError(null)
+    isRunningRef.current = true
 
     try {
-      const produtos = await fetchEnquadramento(
+      const lista = await fetchEnquadramento(
         rendaNum, valorImovelNum, dataNascimentoAPI,
         selectedUF.coIbge, selectedMunicipio.codigo,
         tipoFinanciamento, categoriaImovel,
       )
-      if (produtos.length === 0) {
+      if (lista.length === 0) {
         setError('Nenhum produto disponível para os dados informados.')
         return
       }
 
-      const produto = produtos[0]
-
-      const simulacaoData = await fetchSimulacao(produto, {
-        renda: rendaNum,
-        valorImovel: valorImovelNum,
-        valorEntrada: valorEntradaNum,
-        prazo: prazoNum,
-        sistema,
-        dataNascimento: dataNascimentoAPI,
-        ufImovel: selectedUF.coIbge,
-        municipioImovel: selectedMunicipio.codigo,
-        tipoFinanciamento,
-        categoriaImovel,
-      })
-
-      const apiEntrada = parseFloat(simulacaoData.valorEntrada ?? '0')
-      if (apiEntrada > 0 && Math.abs(apiEntrada - valorEntradaNum) > 1) {
-        setEntradaAjustada({
-          solicitada: valorEntradaNum,
-          ajustada: apiEntrada,
-          valorFinanciamento: parseFloat(simulacaoData.valorFinanciamento ?? '0'),
-        })
-      } else {
-        setEntradaAjustada(null)
-      }
-
-      const result = extractFromSimulacao(simulacaoData, sistema)
-      setExtracted(result)
-      setEtapa('preview')
+      inputCacheRef.current = { rendaNum, valorImovelNum, valorEntradaNum, prazoNum, dataNascimentoAPI }
+      setProdutos(lista)
+      setSelectedProduto(lista[0])
 
       localStorage.setItem(CACHE_KEY, JSON.stringify({
         renda: rendaNum,
@@ -153,25 +167,88 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
         municipioCodigo: selectedMunicipio.codigo,
         municipioNome: selectedMunicipio.nome,
       }))
+
+      setEtapa('produtos')
     } catch (e) {
       const status = (e as { status?: number }).status
-      if (status === 429) {
-        let secs = 60
-        setRateLimitSecondsLeft(secs)
-        rateLimitRef.current = setInterval(() => {
-          secs -= 1
-          setRateLimitSecondsLeft(secs)
-          if (secs <= 0) {
-            clearInterval(rateLimitRef.current!)
-            rateLimitRef.current = null
-          }
-        }, 1000)
-      }
+      if (status === 429) startRateLimit()
       setError(e instanceof Error ? e.message : 'Não foi possível conectar com a API da Caixa.')
       console.error(e)
     } finally {
+      isRunningRef.current = false
       setLoading(false)
     }
+  }
+
+  async function handleSimular(produtoInicial: CaixaProduto) {
+    if (isRunningRef.current) return
+    const cache = inputCacheRef.current
+    if (!cache || !selectedUF || !selectedMunicipio) return
+    const { rendaNum, valorImovelNum, valorEntradaNum, prazoNum, dataNascimentoAPI } = cache
+
+    const idx = produtos.findIndex((p) => p.codigo === produtoInicial.codigo)
+    const ordered = [...produtos.slice(idx), ...produtos.slice(0, idx)]
+
+    isRunningRef.current = true
+    setLoading(true)
+    setError(null)
+
+    for (let i = 0; i < ordered.length; i++) {
+      const produto = ordered[i]
+      const nome = produto.nomeProduto ?? produto.nome ?? produto.descricao ?? `Produto ${produto.codigo}`
+      setSelectedProduto(produto)
+
+      try {
+        const simulacaoData = await fetchSimulacao(produto, {
+          renda: rendaNum,
+          valorImovel: valorImovelNum,
+          valorEntrada: valorEntradaNum,
+          prazo: prazoNum,
+          sistema,
+          dataNascimento: dataNascimentoAPI,
+          ufImovel: selectedUF.coIbge,
+          municipioImovel: selectedMunicipio.codigo,
+          tipoFinanciamento,
+          categoriaImovel,
+        })
+
+        const apiEntrada = parseFloat(simulacaoData.valorEntrada ?? '0')
+        if (apiEntrada > 0 && Math.abs(apiEntrada - valorEntradaNum) > 1) {
+          setEntradaAjustada({
+            solicitada: valorEntradaNum,
+            ajustada: apiEntrada,
+            valorFinanciamento: parseFloat(simulacaoData.valorFinanciamento ?? '0'),
+          })
+        } else {
+          setEntradaAjustada(null)
+        }
+
+        const result = extractFromSimulacao(simulacaoData, sistema)
+        setExtracted(result)
+        setEtapa('preview')
+        setLoading(false)
+        isRunningRef.current = false
+        return
+      } catch (e) {
+        console.error(`Produto "${nome}" falhou:`, e)
+        const status = (e as { status?: number }).status
+        if (status === 429) {
+          startRateLimit()
+          setError('Limite de requisições atingido. Aguarde antes de tentar novamente.')
+          break
+        }
+        const hasNext = i < ordered.length - 1
+        if (hasNext) {
+          const nextNome = ordered[i + 1].nomeProduto ?? ordered[i + 1].nome ?? ordered[i + 1].descricao ?? 'próximo produto'
+          addToast(`"${nome}" indisponível. Tentando "${nextNome}"…`)
+        } else {
+          setError(e instanceof Error ? e.message : 'Não foi possível conectar com a API da Caixa.')
+        }
+      }
+    }
+
+    isRunningRef.current = false
+    setLoading(false)
   }
 
   const rows: { label: string; value: string | undefined }[] = [
@@ -186,6 +263,16 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-4 py-8">
+      {/* Toasts */}
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-sm px-4 pointer-events-none">
+        {toasts.map((t) => (
+          <div key={t.id} className="flex items-start gap-2.5 bg-amber-950/90 border border-amber-700/60 text-amber-300 text-xs px-4 py-3 rounded-xl shadow-xl backdrop-blur-sm">
+            <span className="text-amber-400 mt-0.5 flex-shrink-0">⚠</span>
+            <span>{t.message}</span>
+          </div>
+        ))}
+      </div>
+
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold text-white mb-2">FinanSim</h1>
         <p className="text-gray-400 text-base">Simulador de financiamento imobiliário</p>
@@ -194,6 +281,7 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
       <div className="w-full max-w-md">
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-2xl">
 
+          {/* ── Etapa: formulário ── */}
           {etapa === 'form' && (
             <>
               <div className="mb-5">
@@ -202,32 +290,11 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
               </div>
 
               <div className="flex flex-col gap-3 mb-4">
-                <InputField
-                  label="Renda bruta familiar mensal"
-                  value={renda}
-                  onChange={setRenda}
-                  prefix="R$"
-                  placeholder="9.000"
-                  monetary
-                />
-                <InputField
-                  label="Valor aproximado do imóvel"
-                  value={valorImovel}
-                  onChange={setValorImovel}
-                  prefix="R$"
-                  placeholder="260.000"
-                  monetary
-                />
-                <InputField
-                  label="Valor de entrada"
-                  value={valorEntrada}
-                  onChange={(v) => { setEntradaTocada(true); setValorEntrada(v) }}
-                  prefix="R$"
-                  placeholder="80.000"
-                  monetary
-                />
+                <InputField label="Renda bruta familiar mensal" value={renda} onChange={setRenda} prefix="R$" placeholder="9.000" monetary />
+                <InputField label="Valor aproximado do imóvel" value={valorImovel} onChange={setValorImovel} prefix="R$" placeholder="260.000" monetary />
+                <InputField label="Valor de entrada" value={valorEntrada} onChange={(v) => { setEntradaTocada(true); setValorEntrada(v) }} prefix="R$" placeholder="80.000" monetary />
 
-                {/* Estado (UF) */}
+                {/* Estado */}
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center justify-between">
                     <label className="text-sm text-gray-300 font-medium">Estado (UF)</label>
@@ -240,15 +307,9 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
                     {geoStatus === 'done' && <span className="inline-flex items-center gap-1 text-xs text-green-500"><CheckCircleIcon className="w-3.5 h-3.5" /> Localização detectada</span>}
                     {geoStatus === 'denied' && <span className="text-xs text-red-400">Localização negada</span>}
                   </div>
-                  <select
-                    value={selectedUF?.sgUf ?? ''}
-                    onChange={(e) => setSelectedUF(ufs.find((u) => u.sgUf === e.target.value) ?? null)}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
-                  >
+                  <select value={selectedUF?.sgUf ?? ''} onChange={(e) => setSelectedUF(ufs.find((u) => u.sgUf === e.target.value) ?? null)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors">
                     <option value="">Selecione um estado</option>
-                    {ufs.map((uf) => (
-                      <option key={uf.sgUf} value={uf.sgUf}>{uf.noUf} ({uf.sgUf})</option>
-                    ))}
+                    {ufs.map((uf) => <option key={uf.sgUf} value={uf.sgUf}>{uf.noUf} ({uf.sgUf})</option>)}
                   </select>
                 </div>
 
@@ -258,31 +319,15 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
                   {selectedMunicipio ? (
                     <div className="flex items-center justify-between w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2">
                       <span className="text-white text-sm">{selectedMunicipio.nome}</span>
-                      <button
-                        onClick={() => { setSelectedMunicipio(null); setMunicipioSearch('') }}
-                        className="p-1 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-all cursor-pointer ml-2 flex-shrink-0"
-                      ><XIcon className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => { setSelectedMunicipio(null); setMunicipioSearch('') }} className="p-1 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-all cursor-pointer ml-2 flex-shrink-0"><XIcon className="w-3.5 h-3.5" /></button>
                     </div>
                   ) : (
                     <div className="relative">
-                      <input
-                        type="text"
-                        value={municipioSearch}
-                        onChange={(e) => setMunicipioSearch(e.target.value)}
-                        placeholder={!selectedUF ? 'Selecione um estado primeiro' : municipiosLoading ? 'Carregando…' : 'Buscar cidade…'}
-                        disabled={!selectedUF || municipiosLoading}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors placeholder-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      />
+                      <input type="text" value={municipioSearch} onChange={(e) => setMunicipioSearch(e.target.value)} placeholder={!selectedUF ? 'Selecione um estado primeiro' : municipiosLoading ? 'Carregando…' : 'Buscar cidade…'} disabled={!selectedUF || municipiosLoading} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors placeholder-gray-600 disabled:opacity-50 disabled:cursor-not-allowed" />
                       {municipioSearch && municipiosFiltrados.length > 0 && (
                         <div className="absolute top-full mt-1 left-0 right-0 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-20 max-h-44 overflow-y-auto">
                           {municipiosFiltrados.map((m) => (
-                            <button
-                              key={m.codigo}
-                              onClick={() => { setSelectedMunicipio(m); setMunicipioSearch('') }}
-                              className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors first:rounded-t-xl last:rounded-b-xl"
-                            >
-                              {m.nome}
-                            </button>
+                            <button key={m.codigo} onClick={() => { setSelectedMunicipio(m); setMunicipioSearch('') }} className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors first:rounded-t-xl last:rounded-b-xl">{m.nome}</button>
                           ))}
                         </div>
                       )}
@@ -292,37 +337,40 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
 
                 <div className="flex flex-col gap-1">
                   <label className="text-sm text-gray-300 font-medium">Data de nascimento</label>
-                  <input
-                    type="date"
-                    value={dataNascimento}
-                    onChange={(e) => setDataNascimento(e.target.value)}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
-                  />
+                  <input type="date" value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors" />
                 </div>
+
+                {/* Tipo + Categoria */}
                 <div className="grid grid-cols-2 gap-3">
-                  <InputField
-                    label="Prazo"
-                    value={prazo}
-                    onChange={setPrazo}
-                    suffix="meses"
-                    placeholder="360"
-                    min={12}
-                    max={420}
-                    step={12}
-                  />
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm text-gray-300 font-medium">Tipo</label>
+                    <select value={tipoFinanciamento} onChange={(e) => setTipoFinanciamento(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors">
+                      <option value="1">Residencial</option>
+                      <option value="2">Comercial</option>
+                      <option value="5">Rural</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm text-gray-300 font-medium">Imóvel</label>
+                    <select value={categoriaImovel} onChange={(e) => setCategoriaImovel(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors">
+                      <option value="1">Novo</option>
+                      <option value="4">Usado</option>
+                      <option value="6">Terreno</option>
+                      <option value="2">Construção</option>
+                      <option value="3">Reforma/Ampliação</option>
+                      <option value="7">Garantia (Home Equity)</option>
+                      <option value="11">Imóveis CAIXA</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <InputField label="Prazo" value={prazo} onChange={setPrazo} suffix="meses" placeholder="360" min={12} max={420} step={12} />
                   <div className="flex flex-col gap-1">
                     <label className="text-sm text-gray-300 font-medium">Sistema</label>
                     <div className="flex gap-1 bg-gray-800 rounded-xl p-1">
                       {(['sac', 'price'] as Sistema[]).map((s) => (
-                        <button
-                          key={s}
-                          onClick={() => setSistema(s)}
-                          className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                            sistema === s
-                              ? 'bg-blue-600 text-white shadow'
-                              : 'text-gray-400 hover:text-white'
-                          }`}
-                        >
+                        <button key={s} onClick={() => setSistema(s)} className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${sistema === s ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}>
                           {s === 'sac' ? 'SAC' : 'Price'}
                         </button>
                       ))}
@@ -333,16 +381,48 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
 
               {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
 
-              <button
-                onClick={handleBuscar}
-                disabled={loading || rateLimitSecondsLeft > 0}
-                className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold transition-all"
-              >
+              <button onClick={handleBuscar} disabled={loading || rateLimitSecondsLeft > 0} className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold transition-all cursor-pointer">
                 {loading ? 'Buscando…' : rateLimitSecondsLeft > 0 ? `Aguarde ${rateLimitSecondsLeft}s` : 'Buscar simulação'}
               </button>
             </>
           )}
 
+          {/* ── Etapa: seleção de enquadramento ── */}
+          {etapa === 'produtos' && (
+            <div className="flex flex-col gap-3">
+              <div className="mb-1">
+                <h2 className="text-white font-semibold text-lg">Escolha o enquadramento</h2>
+                <p className="text-xs text-gray-500 mt-0.5">{produtos.length} produto{produtos.length > 1 ? 's' : ''} disponível{produtos.length > 1 ? 'is' : ''} para o seu perfil</p>
+              </div>
+
+              {produtos.map((p) => {
+                const nome = p.nomeProduto ?? p.nome ?? p.descricao ?? `Produto ${p.codigo}`
+                const isSelected = selectedProduto?.codigo === p.codigo
+                return (
+                  <button key={p.codigo} onClick={() => setSelectedProduto(p)} className={`w-full text-left flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl border transition-all cursor-pointer ${isSelected ? 'border-blue-500 bg-blue-600/10' : 'border-gray-700 bg-gray-800/60 hover:border-gray-500'}`}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-600'}`} />
+                      <p className={`text-sm font-medium truncate ${isSelected ? 'text-white' : 'text-gray-300'}`}>{nome}</p>
+                    </div>
+                    <ChevronRightIcon className={`w-4 h-4 flex-shrink-0 transition-colors ${isSelected ? 'text-blue-400' : 'text-gray-600'}`} />
+                  </button>
+                )
+              })}
+
+              {error && <p className="text-xs text-red-400">{error}</p>}
+
+              <div className="grid grid-cols-2 gap-3 mt-1">
+                <button onClick={() => { setEtapa('form'); setError(null) }} className="py-3 rounded-xl border border-gray-700 text-gray-400 text-sm font-medium hover:border-gray-500 transition-all cursor-pointer">
+                  Voltar
+                </button>
+                <button onClick={() => selectedProduto && handleSimular(selectedProduto)} disabled={!selectedProduto || loading} className="py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold transition-all cursor-pointer">
+                  {loading ? 'Simulando…' : 'Simular'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Etapa: preview ── */}
           {etapa === 'preview' && extracted && (
             <>
               <div className="mb-5">
@@ -354,10 +434,7 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
                 {rows.map(({ label, value }) => (
                   <div key={label} className="flex items-center justify-between py-2 border-b border-gray-800">
                     <span className="text-xs text-gray-400">{label}</span>
-                    {value
-                      ? <span className="text-sm font-medium text-white">{value}</span>
-                      : <span className="text-xs text-gray-600 italic">não encontrado</span>
-                    }
+                    {value ? <span className="text-sm font-medium text-white">{value}</span> : <span className="text-xs text-gray-600 italic">não encontrado</span>}
                   </div>
                 ))}
               </div>
@@ -366,13 +443,7 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
                 <div className="bg-orange-900/20 border border-orange-700/40 rounded-xl px-3 py-3 mb-4">
                   <p className="text-xs text-orange-400 font-semibold mb-1">Entrada ajustada pela Caixa</p>
                   <p className="text-xs text-orange-300">
-                    Sua entrada de{' '}
-                    <span className="font-medium">R$ {entradaAjustada.solicitada.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>{' '}
-                    foi ajustada para{' '}
-                    <span className="font-medium">R$ {entradaAjustada.ajustada.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>.
-                    {' '}Com sua renda, o máximo financiável é{' '}
-                    <span className="font-medium">R$ {entradaAjustada.valorFinanciamento.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>{' '}
-                    (parcela limitada a 30% da renda mensal).
+                    Sua entrada de <span className="font-medium">R$ {entradaAjustada.solicitada.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span> foi ajustada para <span className="font-medium">R$ {entradaAjustada.ajustada.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>. Com sua renda, o máximo financiável é <span className="font-medium">R$ {entradaAjustada.valorFinanciamento.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span> (parcela limitada a 30% da renda mensal).
                   </p>
                 </div>
               )}
@@ -380,23 +451,15 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
               {extracted.warnings.length > 0 && (
                 <div className="bg-amber-900/20 border border-amber-800/40 rounded-xl px-3 py-2 mb-4">
                   <p className="text-xs text-amber-400 font-medium mb-1">Campos não encontrados:</p>
-                  {extracted.warnings.map((w) => (
-                    <p key={w} className="text-xs text-amber-500">· {w}</p>
-                  ))}
+                  {extracted.warnings.map((w) => <p key={w} className="text-xs text-amber-500">· {w}</p>)}
                 </div>
               )}
 
               <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setEtapa('form')}
-                  className="py-3 rounded-xl border border-gray-700 text-gray-400 text-sm font-medium hover:border-gray-500 transition-all"
-                >
+                <button onClick={() => setEtapa('produtos')} className="py-3 rounded-xl border border-gray-700 text-gray-400 text-sm font-medium hover:border-gray-500 transition-all cursor-pointer">
                   Voltar
                 </button>
-                <button
-                  onClick={() => onComplete(extracted.params)}
-                  className="py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-all"
-                >
+                <button onClick={() => onComplete(extracted.params)} className="py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-all cursor-pointer">
                   Aplicar
                 </button>
               </div>
@@ -404,10 +467,7 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
           )}
         </div>
 
-        <button
-          onClick={onSkip}
-          className="mt-5 w-full text-center text-xs text-gray-600 hover:text-gray-400 transition-colors"
-        >
+        <button onClick={onSkip} className="mt-5 w-full text-center text-xs text-gray-600 hover:text-gray-400 transition-colors cursor-pointer">
           Pular e usar valores padrão
         </button>
       </div>
