@@ -34,6 +34,8 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
   const [prazo, setPrazo] = useState('360')
   const [sistema, setSistema] = useState<Sistema>('sac')
   const [dataNascimento, setDataNascimento] = useState('1980-01-01')
+  const [tipoFinanciamento, setTipoFinanciamento] = useState('1') // Residencial
+  const [categoriaImovel, setCategoriaImovel] = useState('2')    // Construção
 
   useEffect(() => {
     if (entradaTocada) return
@@ -123,6 +125,8 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
         dataNascimento: dataNascimentoAPI,
         ufImovel: selectedUF.coIbge,
         municipioImovel: selectedMunicipio.codigo,
+        tipoFinanciamento,
+        categoriaImovel,
       })
 
       const apiEntrada = parseFloat(simulacaoData.valorEntrada ?? '0')
