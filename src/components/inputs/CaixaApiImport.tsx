@@ -32,6 +32,16 @@ export function CaixaApiImport({ state, onChange }: Props) {
   const [selectedProduto, setSelectedProduto] = useState<CaixaProduto | null>(null)
   // Inputs cacheados para reuso no handleSimular
   const inputCacheRef = useRef<{ rendaNum: number; valorImovelNum: number; valorEntradaNum: number; prazoNum: number; dataNascimentoAPI: string } | null>(null)
+  // Toasts de aviso (instabilidade da API)
+  const [toasts, setToasts] = useState<{ id: number; message: string }[]>([])
+  const toastTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+
+  function addToast(message: string) {
+    const id = Date.now()
+    setToasts((prev) => [...prev, { id, message }])
+    const timer = setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 5000)
+    toastTimersRef.current.push(timer)
+  }
 
   const [renda, setRenda] = useState('')
   const [valorImovel, setValorImovel] = useState('')
@@ -160,47 +170,67 @@ export function CaixaApiImport({ state, onChange }: Props) {
     }
   }
 
-  async function handleSimular(produto: CaixaProduto) {
+  async function handleSimular(produtoInicial: CaixaProduto) {
     const cache = inputCacheRef.current
     if (!cache || !selectedUF || !selectedMunicipio) return
     const { rendaNum, valorImovelNum, valorEntradaNum, prazoNum, dataNascimentoAPI } = cache
 
+    // Ordena: produto selecionado primeiro, depois os demais em ordem
+    const idx = produtos.findIndex((p) => p.codigo === produtoInicial.codigo)
+    const ordered = [...produtos.slice(idx), ...produtos.slice(0, idx)]
+
     setLoading(true)
     setError(null)
-    try {
-      const simulacaoData = await fetchSimulacao(produto, {
-        renda: rendaNum,
-        valorImovel: valorImovelNum,
-        valorEntrada: valorEntradaNum,
-        prazo: prazoNum,
-        sistema,
-        dataNascimento: dataNascimentoAPI,
-        ufImovel: selectedUF.coIbge,
-        municipioImovel: selectedMunicipio.codigo,
-        tipoFinanciamento,
-        categoriaImovel,
-      })
 
-      const apiEntrada = parseFloat(simulacaoData.valorEntrada ?? '0')
-      if (apiEntrada > 0 && Math.abs(apiEntrada - valorEntradaNum) > 1) {
-        setEntradaAjustada({
-          solicitada: valorEntradaNum,
-          ajustada: apiEntrada,
-          valorFinanciamento: parseFloat(simulacaoData.valorFinanciamento ?? '0'),
+    for (let i = 0; i < ordered.length; i++) {
+      const produto = ordered[i]
+      const nome = produto.nomeProduto ?? produto.nome ?? produto.descricao ?? `Produto ${produto.codigo}`
+      setSelectedProduto(produto)
+
+      try {
+        const simulacaoData = await fetchSimulacao(produto, {
+          renda: rendaNum,
+          valorImovel: valorImovelNum,
+          valorEntrada: valorEntradaNum,
+          prazo: prazoNum,
+          sistema,
+          dataNascimento: dataNascimentoAPI,
+          ufImovel: selectedUF.coIbge,
+          municipioImovel: selectedMunicipio.codigo,
+          tipoFinanciamento,
+          categoriaImovel,
         })
-      } else {
-        setEntradaAjustada(null)
-      }
 
-      const result = extractFromSimulacao(simulacaoData, sistema)
-      setExtracted(result)
-      setEtapa('preview')
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Não foi possível conectar com a API da Caixa.')
-      console.error(e)
-    } finally {
-      setLoading(false)
+        const apiEntrada = parseFloat(simulacaoData.valorEntrada ?? '0')
+        if (apiEntrada > 0 && Math.abs(apiEntrada - valorEntradaNum) > 1) {
+          setEntradaAjustada({
+            solicitada: valorEntradaNum,
+            ajustada: apiEntrada,
+            valorFinanciamento: parseFloat(simulacaoData.valorFinanciamento ?? '0'),
+          })
+        } else {
+          setEntradaAjustada(null)
+        }
+
+        const result = extractFromSimulacao(simulacaoData, sistema)
+        setExtracted(result)
+        setEtapa('preview')
+        setLoading(false)
+        return // sucesso — sai do loop
+      } catch (e) {
+        console.error(`Produto "${nome}" falhou:`, e)
+        const hasNext = i < ordered.length - 1
+        if (hasNext) {
+          const nextNome = ordered[i + 1].nomeProduto ?? ordered[i + 1].nome ?? ordered[i + 1].descricao ?? 'próximo produto'
+          addToast(`"${nome}" indisponível. Tentando "${nextNome}"…`)
+        } else {
+          // Todos falharam
+          setError(e instanceof Error ? e.message : 'Não foi possível conectar com a API da Caixa.')
+        }
+      }
     }
+
+    setLoading(false)
   }
 
   function handleApply() {
@@ -218,6 +248,10 @@ export function CaixaApiImport({ state, onChange }: Props) {
     setProdutos([])
     setSelectedProduto(null)
     inputCacheRef.current = null
+    // Limpa timers de toast pendentes
+    toastTimersRef.current.forEach(clearTimeout)
+    toastTimersRef.current = []
+    setToasts([])
   }
 
   const rows: { label: string; value: string | undefined }[] = [
@@ -232,6 +266,19 @@ export function CaixaApiImport({ state, onChange }: Props) {
 
   return (
     <>
+      {/* Toasts de aviso — fixos no topo, fora do modal */}
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 w-full max-w-sm px-4 pointer-events-none">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className="flex items-start gap-2.5 bg-amber-950/90 border border-amber-700/60 text-amber-300 text-xs px-4 py-3 rounded-xl shadow-xl backdrop-blur-sm animate-fade-in"
+          >
+            <span className="text-amber-400 mt-0.5 flex-shrink-0">⚠</span>
+            <span>{t.message}</span>
+          </div>
+        ))}
+      </div>
+
       {/* FAB fixo — sempre visível independente do scroll */}
       <button
         onClick={() => setOpen(true)}
