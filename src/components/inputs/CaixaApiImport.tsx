@@ -26,6 +26,7 @@ export function CaixaApiImport({ state, onChange }: Props) {
   const [extracted, setExtracted] = useState<CaixaExtracted | null>(null)
   const [rateLimitSecondsLeft, setRateLimitSecondsLeft] = useState(0)
   const rateLimitRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const isRunningRef = useRef(false) // guard síncrono contra dupla execução
   const [entradaAjustada, setEntradaAjustada] = useState<{ solicitada: number; ajustada: number; valorFinanciamento: number } | null>(null)
   // Enquadramento
   const [produtos, setProdutos] = useState<CaixaProduto[]>([])
@@ -52,6 +53,14 @@ export function CaixaApiImport({ state, onChange }: Props) {
   const [dataNascimento, setDataNascimento] = useState('1980-01-01')
   const [tipoFinanciamento, setTipoFinanciamento] = useState('1') // Residencial por padrão
   const [categoriaImovel, setCategoriaImovel] = useState('2')    // Construção por padrão
+
+  // Cleanup do interval de rate-limit e timers de toast ao desmontar
+  useEffect(() => {
+    return () => {
+      if (rateLimitRef.current) clearInterval(rateLimitRef.current)
+      toastTimersRef.current.forEach(clearTimeout)
+    }
+  }, [])
 
   useEffect(() => {
     if (entradaTocada) return
@@ -91,7 +100,23 @@ export function CaixaApiImport({ state, onChange }: Props) {
     setSistema(state.params.sistema)
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  function startRateLimit() {
+    // Cancela interval anterior se ainda estiver rodando
+    if (rateLimitRef.current) clearInterval(rateLimitRef.current)
+    let secs = 60
+    setRateLimitSecondsLeft(secs)
+    rateLimitRef.current = setInterval(() => {
+      secs -= 1
+      setRateLimitSecondsLeft(secs)
+      if (secs <= 0) {
+        clearInterval(rateLimitRef.current!)
+        rateLimitRef.current = null
+      }
+    }, 1000)
+  }
+
   async function handleBuscar() {
+    if (isRunningRef.current) return // guard contra duplo clique
     const rendaNum = parseFloat(renda)
     const valorImovelNum = parseFloat(valorImovel)
     const valorEntradaNum = parseFloat(valorEntrada)
@@ -122,6 +147,7 @@ export function CaixaApiImport({ state, onChange }: Props) {
 
     setLoading(true)
     setError(null)
+    isRunningRef.current = true
 
     try {
       const lista = await fetchEnquadramento(
@@ -151,30 +177,22 @@ export function CaixaApiImport({ state, onChange }: Props) {
       setEtapa('produtos')
     } catch (e) {
       const status = (e as { status?: number }).status
-      if (status === 429) {
-        let secs = 60
-        setRateLimitSecondsLeft(secs)
-        rateLimitRef.current = setInterval(() => {
-          secs -= 1
-          setRateLimitSecondsLeft(secs)
-          if (secs <= 0) {
-            clearInterval(rateLimitRef.current!)
-            rateLimitRef.current = null
-          }
-        }, 1000)
-      }
+      if (status === 429) startRateLimit()
       setError(e instanceof Error ? e.message : 'Não foi possível conectar com a API da Caixa.')
       console.error(e)
     } finally {
+      isRunningRef.current = false
       setLoading(false)
     }
   }
 
   async function handleSimular(produtoInicial: CaixaProduto) {
+    if (isRunningRef.current) return // guard contra duplo clique
     const cache = inputCacheRef.current
     if (!cache || !selectedUF || !selectedMunicipio) return
     const { rendaNum, valorImovelNum, valorEntradaNum, prazoNum, dataNascimentoAPI } = cache
 
+    isRunningRef.current = true
     // Ordena: produto selecionado primeiro, depois os demais em ordem
     const idx = produtos.findIndex((p) => p.codigo === produtoInicial.codigo)
     const ordered = [...produtos.slice(idx), ...produtos.slice(0, idx)]
@@ -219,17 +237,24 @@ export function CaixaApiImport({ state, onChange }: Props) {
         return // sucesso — sai do loop
       } catch (e) {
         console.error(`Produto "${nome}" falhou:`, e)
+        const status = (e as { status?: number }).status
+        if (status === 429) {
+          // Rate-limit durante fallback: para o loop e ativa o countdown
+          startRateLimit()
+          setError('Limite de requisições atingido. Aguarde antes de tentar novamente.')
+          break
+        }
         const hasNext = i < ordered.length - 1
         if (hasNext) {
           const nextNome = ordered[i + 1].nomeProduto ?? ordered[i + 1].nome ?? ordered[i + 1].descricao ?? 'próximo produto'
           addToast(`"${nome}" indisponível. Tentando "${nextNome}"…`)
         } else {
-          // Todos falharam
           setError(e instanceof Error ? e.message : 'Não foi possível conectar com a API da Caixa.')
         }
       }
     }
 
+    isRunningRef.current = false
     setLoading(false)
   }
 
