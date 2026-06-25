@@ -15,10 +15,8 @@ const FIXED_PARAMS: Record<string, string> = {
   fatorSocial: 'N',
   loteAlienadoHipotecado: 'N',
   portabilidadeCreditoImobiliario: 'N',
-  categoriaImovel: '4',
   possuoImovelMunicipio: 'N',
   subsidioFgtsUniao: 'N',
-  tipoFinanciamento: '1',
 }
 
 export async function GET(request: NextRequest) {
@@ -28,6 +26,8 @@ export async function GET(request: NextRequest) {
   const dataNascimento = searchParams.get('dataNascimento') ?? '01/01/1980'
   const ufImovel = searchParams.get('ufImovel') ?? '31'
   const municipioImovel = searchParams.get('municipioImovel') ?? '3134202'
+  const tipoFinanciamento = searchParams.get('tipoFinanciamento') ?? '1'
+  const categoriaImovel = searchParams.get('categoriaImovel') ?? '2'
 
   if (!renda || !valorImovel) {
     return NextResponse.json({ error: 'renda e valorImovel são obrigatórios' }, { status: 400 })
@@ -38,6 +38,8 @@ export async function GET(request: NextRequest) {
     dataNascimentoComprador: dataNascimento,
     rendaBrutaFamiliarMensal: parseFloat(renda).toFixed(2),
     valorAproximadoImovel: parseFloat(valorImovel).toFixed(2),
+    tipoFinanciamento,
+    categoriaImovel,
     ufImovel,
     municipioImovel,
   })

@@ -22,6 +22,8 @@ export async function fetchEnquadramento(
   dataNascimento: string,
   ufImovel: number,
   municipioImovel: number,
+  tipoFinanciamento: string,
+  categoriaImovel: string,
 ): Promise<CaixaProduto[]> {
   const params = new URLSearchParams({
     renda: String(renda),
@@ -29,6 +31,8 @@ export async function fetchEnquadramento(
     dataNascimento,
     ufImovel: String(ufImovel),
     municipioImovel: String(municipioImovel),
+    tipoFinanciamento,
+    categoriaImovel,
   })
   const res = await fetch(`/api/caixa/enquadramento?${params}`)
   if (!res.ok) {

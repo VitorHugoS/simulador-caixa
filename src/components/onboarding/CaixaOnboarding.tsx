@@ -108,6 +108,7 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
       const produtos = await fetchEnquadramento(
         rendaNum, valorImovelNum, dataNascimentoAPI,
         selectedUF.coIbge, selectedMunicipio.codigo,
+        tipoFinanciamento, categoriaImovel,
       )
       if (produtos.length === 0) {
         setError('Nenhum produto disponível para os dados informados.')
