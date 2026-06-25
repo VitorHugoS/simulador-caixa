@@ -35,6 +35,8 @@ export function CaixaApiImport({ state, onChange }: Props) {
   const [prazo, setPrazo] = useState(String(state.params.n))
   const [sistema, setSistema] = useState<Sistema>(state.params.sistema)
   const [dataNascimento, setDataNascimento] = useState('1980-01-01')
+  const [tipoFinanciamento, setTipoFinanciamento] = useState('1') // Residencial por padrão
+  const [categoriaImovel, setCategoriaImovel] = useState('2')    // Construção por padrão
 
   useEffect(() => {
     if (entradaTocada) return
@@ -127,6 +129,8 @@ export function CaixaApiImport({ state, onChange }: Props) {
         dataNascimento: dataNascimentoAPI,
         ufImovel: selectedUF.coIbge,
         municipioImovel: selectedMunicipio.codigo,
+        tipoFinanciamento,
+        categoriaImovel,
       })
 
       const apiEntrada = parseFloat(simulacaoData.valorEntrada ?? '0')
@@ -329,6 +333,38 @@ export function CaixaApiImport({ state, onChange }: Props) {
                       className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
                     />
                   </div>
+                  {/* Tipo de financiamento + Categoria do imóvel */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm text-gray-300 font-medium">Tipo</label>
+                      <select
+                        value={tipoFinanciamento}
+                        onChange={(e) => setTipoFinanciamento(e.target.value)}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                      >
+                        <option value="1">Residencial</option>
+                        <option value="2">Comercial</option>
+                        <option value="5">Rural</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm text-gray-300 font-medium">Imóvel</label>
+                      <select
+                        value={categoriaImovel}
+                        onChange={(e) => setCategoriaImovel(e.target.value)}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                      >
+                        <option value="1">Novo</option>
+                        <option value="4">Usado</option>
+                        <option value="6">Terreno</option>
+                        <option value="2">Construção</option>
+                        <option value="3">Reforma/Ampliação</option>
+                        <option value="7">Garantia (Home Equity)</option>
+                        <option value="11">Imóveis CAIXA</option>
+                      </select>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-3">
                     <InputField
                       label="Prazo"

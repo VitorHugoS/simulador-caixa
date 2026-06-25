@@ -86,4 +86,6 @@ export interface CaixaApiInput {
   dataNascimento: string   // DD/MM/YYYY
   ufImovel: number         // coIbge da UF selecionada
   municipioImovel: number  // codigo do município selecionado
+  tipoFinanciamento: string  // '1' Residencial | '2' Comercial | '5' Rural
+  categoriaImovel: string    // '1' Novo | '4' Usado | '6' Terreno | etc.
 }
