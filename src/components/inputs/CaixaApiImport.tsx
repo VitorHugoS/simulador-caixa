@@ -288,7 +288,6 @@ export function CaixaApiImport({ state, onChange }: Props) {
                           <p className={`text-sm font-medium truncate ${isSelected ? 'text-white' : 'text-gray-300'}`}>
                             {nome}
                           </p>
-                          <p className="text-xs text-gray-500 mt-0.5">Cód. {p.codigo} · v{p.versao}</p>
                         </div>
                       </div>
                       <ChevronRightIcon className={`w-4 h-4 flex-shrink-0 transition-colors ${isSelected ? 'text-blue-400' : 'text-gray-600'}`} />
