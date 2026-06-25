@@ -5,8 +5,8 @@ import { AppState, Sistema } from '@/lib/engine/types'
 import { fetchEnquadramento, fetchSimulacao } from '@/lib/caixa/api'
 import { extractFromSimulacao } from '@/lib/caixa/extract'
 import { useLocalidade } from '@/lib/caixa/useLocalidade'
-import type { CaixaExtracted } from '@/lib/caixa/types'
-import { BuildingIcon, MapPinIcon, CheckCircleIcon, XIcon } from '@/components/ui/icons'
+import type { CaixaExtracted, CaixaProduto } from '@/lib/caixa/types'
+import { BuildingIcon, MapPinIcon, CheckCircleIcon, XIcon, ChevronRightIcon } from '@/components/ui/icons'
 import { InputField } from './InputField'
 
 const CACHE_KEY = 'caixa_perfil'
@@ -16,7 +16,7 @@ interface Props {
   onChange: (next: AppState) => void
 }
 
-type Etapa = 'form' | 'preview'
+type Etapa = 'form' | 'produtos' | 'preview'
 
 export function CaixaApiImport({ state, onChange }: Props) {
   const [open, setOpen] = useState(false)
@@ -27,6 +27,11 @@ export function CaixaApiImport({ state, onChange }: Props) {
   const [rateLimitSecondsLeft, setRateLimitSecondsLeft] = useState(0)
   const rateLimitRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [entradaAjustada, setEntradaAjustada] = useState<{ solicitada: number; ajustada: number; valorFinanciamento: number } | null>(null)
+  // Enquadramento
+  const [produtos, setProdutos] = useState<CaixaProduto[]>([])
+  const [selectedProduto, setSelectedProduto] = useState<CaixaProduto | null>(null)
+  // Inputs cacheados para reuso no handleSimular
+  const inputCacheRef = useRef<{ rendaNum: number; valorImovelNum: number; valorEntradaNum: number; prazoNum: number; dataNascimentoAPI: string } | null>(null)
 
   const [renda, setRenda] = useState('')
   const [valorImovel, setValorImovel] = useState('')
@@ -109,18 +114,60 @@ export function CaixaApiImport({ state, onChange }: Props) {
     setError(null)
 
     try {
-      const produtos = await fetchEnquadramento(
+      const lista = await fetchEnquadramento(
         rendaNum, valorImovelNum, dataNascimentoAPI,
         selectedUF.coIbge, selectedMunicipio.codigo,
         tipoFinanciamento, categoriaImovel,
       )
-      if (produtos.length === 0) {
+      if (lista.length === 0) {
         setError('Nenhum produto disponível para os dados informados.')
         return
       }
 
-      const produto = produtos[0]
+      // Guarda inputs para reuso quando o usuário selecionar o produto
+      inputCacheRef.current = { rendaNum, valorImovelNum, valorEntradaNum, prazoNum, dataNascimentoAPI }
+      setProdutos(lista)
+      setSelectedProduto(lista[0]) // pré-seleciona o primeiro
 
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        renda: rendaNum,
+        valorImovel: valorImovelNum,
+        dataNascimento,
+        ufSgUf: selectedUF.sgUf,
+        municipioCodigo: selectedMunicipio.codigo,
+        municipioNome: selectedMunicipio.nome,
+      }))
+
+      setEtapa('produtos')
+    } catch (e) {
+      const status = (e as { status?: number }).status
+      if (status === 429) {
+        let secs = 60
+        setRateLimitSecondsLeft(secs)
+        rateLimitRef.current = setInterval(() => {
+          secs -= 1
+          setRateLimitSecondsLeft(secs)
+          if (secs <= 0) {
+            clearInterval(rateLimitRef.current!)
+            rateLimitRef.current = null
+          }
+        }, 1000)
+      }
+      setError(e instanceof Error ? e.message : 'Não foi possível conectar com a API da Caixa.')
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleSimular(produto: CaixaProduto) {
+    const cache = inputCacheRef.current
+    if (!cache || !selectedUF || !selectedMunicipio) return
+    const { rendaNum, valorImovelNum, valorEntradaNum, prazoNum, dataNascimentoAPI } = cache
+
+    setLoading(true)
+    setError(null)
+    try {
       const simulacaoData = await fetchSimulacao(produto, {
         renda: rendaNum,
         valorImovel: valorImovelNum,
@@ -148,29 +195,7 @@ export function CaixaApiImport({ state, onChange }: Props) {
       const result = extractFromSimulacao(simulacaoData, sistema)
       setExtracted(result)
       setEtapa('preview')
-
-      localStorage.setItem(CACHE_KEY, JSON.stringify({
-        renda: rendaNum,
-        valorImovel: valorImovelNum,
-        dataNascimento,
-        ufSgUf: selectedUF.sgUf,
-        municipioCodigo: selectedMunicipio.codigo,
-        municipioNome: selectedMunicipio.nome,
-      }))
     } catch (e) {
-      const status = (e as { status?: number }).status
-      if (status === 429) {
-        let secs = 60
-        setRateLimitSecondsLeft(secs)
-        rateLimitRef.current = setInterval(() => {
-          secs -= 1
-          setRateLimitSecondsLeft(secs)
-          if (secs <= 0) {
-            clearInterval(rateLimitRef.current!)
-            rateLimitRef.current = null
-          }
-        }, 1000)
-      }
       setError(e instanceof Error ? e.message : 'Não foi possível conectar com a API da Caixa.')
       console.error(e)
     } finally {
@@ -190,6 +215,9 @@ export function CaixaApiImport({ state, onChange }: Props) {
     setError(null)
     setExtracted(null)
     setEntradaAjustada(null)
+    setProdutos([])
+    setSelectedProduto(null)
+    inputCacheRef.current = null
   }
 
   const rows: { label: string; value: string | undefined }[] = [
@@ -223,16 +251,70 @@ export function CaixaApiImport({ state, onChange }: Props) {
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h2 className="text-white font-semibold text-lg">
-                  {etapa === 'form' ? 'Simulação pela Caixa' : 'Resultado da simulação'}
+                  {etapa === 'form' && 'Simulação pela Caixa'}
+                  {etapa === 'produtos' && 'Escolha o enquadramento'}
+                  {etapa === 'preview' && 'Resultado da simulação'}
                 </h2>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  {etapa === 'form'
-                    ? 'Consulta direta à API oficial do Simulador Habitacional'
-                    : 'Revise os valores antes de aplicar'}
+                  {etapa === 'form' && 'Consulta direta à API oficial do Simulador Habitacional'}
+                  {etapa === 'produtos' && `${produtos.length} produto${produtos.length > 1 ? 's' : ''} disponível${produtos.length > 1 ? 'is' : ''} para o seu perfil`}
+                  {etapa === 'preview' && 'Revise os valores antes de aplicar'}
                 </p>
               </div>
               <button onClick={handleClose} className="p-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-all cursor-pointer"><XIcon className="w-4 h-4" /></button>
             </div>
+
+            {/* ── Etapa: seleção de enquadramento ── */}
+            {etapa === 'produtos' && (
+              <div className="flex flex-col gap-3">
+                {produtos.map((p) => {
+                  const nome = p.nomeProduto ?? p.nome ?? p.descricao ?? `Produto ${p.codigo}`
+                  const isSelected = selectedProduto?.codigo === p.codigo
+                  return (
+                    <button
+                      key={p.codigo}
+                      onClick={() => setSelectedProduto(p)}
+                      className={`w-full text-left flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl border transition-all cursor-pointer ${
+                        isSelected
+                          ? 'border-blue-500 bg-blue-600/10'
+                          : 'border-gray-700 bg-gray-800/60 hover:border-gray-500'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all ${
+                          isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-600'
+                        }`} />
+                        <div className="min-w-0">
+                          <p className={`text-sm font-medium truncate ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                            {nome}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-0.5">Cód. {p.codigo} · v{p.versao}</p>
+                        </div>
+                      </div>
+                      <ChevronRightIcon className={`w-4 h-4 flex-shrink-0 transition-colors ${isSelected ? 'text-blue-400' : 'text-gray-600'}`} />
+                    </button>
+                  )
+                })}
+
+                {error && <p className="text-xs text-red-400">{error}</p>}
+
+                <div className="grid grid-cols-2 gap-3 mt-1">
+                  <button
+                    onClick={() => { setEtapa('form'); setError(null) }}
+                    className="py-3 rounded-xl border border-gray-700 text-gray-400 text-sm font-medium hover:border-gray-500 transition-all cursor-pointer"
+                  >
+                    Voltar
+                  </button>
+                  <button
+                    onClick={() => selectedProduto && handleSimular(selectedProduto)}
+                    disabled={!selectedProduto || loading}
+                    className="py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-medium transition-all cursor-pointer"
+                  >
+                    {loading ? 'Simulando…' : 'Simular'}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {etapa === 'form' && (
               <>
