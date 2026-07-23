@@ -6,29 +6,21 @@ export function calcularSalarioLiquido(salarioBruto: number): number {
   let inss = 0
   let restante = salarioBruto
 
-  // Faixa 1: Até R$ 1.412,00 (7,5%)
-  if (restante > 0) {
-    const base = Math.min(restante, 1412.00)
-    inss += base * 0.075
+  const faixasINSS = [
+    { teto: 1412.00, aliquota: 0.075 },
+    { teto: 2666.68, aliquota: 0.09 },
+    { teto: 4000.03, aliquota: 0.12 },
+    { teto: 7786.02, aliquota: 0.14 }
+  ]
+
+  let pisoAnterior = 0
+  for (const faixa of faixasINSS) {
+    if (restante <= 0) break
+    const tamanhoFaixa = faixa.teto - pisoAnterior
+    const base = Math.min(restante, tamanhoFaixa)
+    inss += base * faixa.aliquota
     restante -= base
-  }
-  // Faixa 2: De R$ 1.412,01 a R$ 2.666,68 (9%)
-  if (restante > 0) {
-    const base = Math.min(restante, 2666.68 - 1412.00)
-    inss += base * 0.09
-    restante -= base
-  }
-  // Faixa 3: De R$ 2.666,69 a R$ 4.000,03 (12%)
-  if (restante > 0) {
-    const base = Math.min(restante, 4000.03 - 2666.68)
-    inss += base * 0.12
-    restante -= base
-  }
-  // Faixa 4: De R$ 4.000,04 a R$ 7.786,02 (14%)
-  if (restante > 0) {
-    const base = Math.min(restante, 7786.02 - 4000.03)
-    inss += base * 0.14
-    restante -= base
+    pisoAnterior = faixa.teto
   }
   // Teto do INSS: Não há desconto extra acima de R$ 7.786,02
 

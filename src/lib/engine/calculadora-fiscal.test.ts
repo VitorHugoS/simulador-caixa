@@ -12,12 +12,11 @@ describe('Calculadora Fiscal', () => {
     // Total INSS: 518.82
     // 
     // Base IRRF = 5000 - 518.82 = 4481.18
-    // Tabela IRPF (faixa 22.5%): 4481.18 * 0.225 - 675.49 = 1008.26 - 675.49 = 332.77
+    // Usamos a dedução padrão simplificada mantida pela base (564.80)
+    // Tabela IRPF para a base (5000 - 564.80 = 4435.20) entra na faixa 22.5%:
+    // 4435.20 * 0.225 - 662.77 = 997.92 - 662.77 = 335.15
     //
-    // Dedução simplificada (alternativa IRRF): 5000 - 607.20 = 4392.80
-    // IRPF Simplificado = 4392.80 * 0.225 - 675.49 = 988.38 - 675.49 = 312.89 (Mais vantajoso! Então IRRF será 312.89)
-    // 
-    // Líquido = 5000 - 518.82 (INSS) - 312.89 (IRPF) = 4168.29
+    // Líquido = 5000 - 518.82 (INSS) - 335.15 (IRPF) = 4146.03
     
     const liquido = calcularSalarioLiquido(5000)
     expect(liquido).toBeCloseTo(4146.03, 1)
