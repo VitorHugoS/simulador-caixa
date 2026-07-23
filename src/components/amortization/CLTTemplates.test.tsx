@@ -68,4 +68,56 @@ describe('CLTTemplates (UI Seam)', () => {
     // O onUpdateParam deve ter sido chamado para o fgtsDeposito
     expect(onUpdateParam).toHaveBeenCalledWith('fgtsDeposito', 800) // 10000 * 0.08 = 800
   })
+
+  it('deve adicionar evento de 13º Salário ao clicar no toggle', () => {
+    const onUpsert = vi.fn()
+    const onRemove = vi.fn()
+    const onUpdateParam = vi.fn()
+
+    render(
+      <CLTTemplates
+        eventos={[]}
+        params={defaultParams}
+        onUpsert={onUpsert}
+        onRemove={onRemove}
+        onUpdateParam={onUpdateParam}
+      />
+    )
+
+    const btn13 = screen.getByText('13º Salário')
+    fireEvent.click(btn13)
+
+    expect(onUpsert).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'template-13-salario',
+      frequencia: 12,
+      mesInicio: 12,
+      valor: 5000 // salário base
+    }))
+  })
+
+  it('deve adicionar evento de Férias ao clicar no toggle', () => {
+    const onUpsert = vi.fn()
+    const onRemove = vi.fn()
+    const onUpdateParam = vi.fn()
+
+    render(
+      <CLTTemplates
+        eventos={[]}
+        params={defaultParams}
+        onUpsert={onUpsert}
+        onRemove={onRemove}
+        onUpdateParam={onUpdateParam}
+      />
+    )
+
+    const btnFerias = screen.getByText('Férias (1/3)')
+    fireEvent.click(btnFerias)
+
+    expect(onUpsert).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'template-ferias',
+      frequencia: 12,
+      mesInicio: 6,
+      valor: 5000 / 3
+    }))
+  })
 })

@@ -18,32 +18,34 @@ export function CLTTemplates({ eventos, params, onUpsert, onRemove, onUpdatePara
 
   const salarioNum = parseFloat(salario) || 0
 
-  // Quando o salário mudar, atualiza os eventos ativos
-  useEffect(() => {
-    if (salarioNum <= 0) return
+  // Quando o usuário DIGITA um novo salário, atualiza os eventos ativos
+  function handleSalarioChange(novoSalarioStr: string) {
+    setSalario(novoSalarioStr)
+    const valor = parseFloat(novoSalarioStr) || 0
+    if (valor <= 0) return
 
     if (active13) {
       const ev = eventos.find((e) => e.id === 'template-13-salario')
-      if (ev && ev.valor !== salarioNum) {
-        onUpsert({ ...ev, valor: salarioNum })
+      if (ev && ev.valor !== valor) {
+        onUpsert({ ...ev, valor })
       }
     }
 
     if (activeFerias) {
       const ev = eventos.find((e) => e.id === 'template-ferias')
-      const valorFerias = salarioNum / 3
+      const valorFerias = valor / 3
       if (ev && Math.abs(ev.valor - valorFerias) > 0.01) {
         onUpsert({ ...ev, valor: valorFerias })
       }
     }
 
     if (activeFgts) {
-      const deposito = salarioNum * 0.08
+      const deposito = valor * 0.08
       if (Math.abs(params.fgtsDeposito - deposito) > 0.01) {
         onUpdateParam('fgtsDeposito', deposito)
       }
     }
-  }, [salario]) // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
   function toggleTemplate(id: string, active: boolean, mesInicio: number, calcValor: (s: number) => number) {
     if (active) {
@@ -146,7 +148,7 @@ export function CLTTemplates({ eventos, params, onUpsert, onRemove, onUpdatePara
           label="Seu salário bruto (Base de cálculo)"
           tooltip="Usado para calcular automaticamente o FGTS (8%), 13º e Férias."
           value={salario}
-          onChange={setSalario}
+          onChange={handleSalarioChange}
           prefix="R$"
           placeholder="5000"
           monetary
