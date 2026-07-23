@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { simularBaselines, simularPersonalizado } from './simulation'
-import { EventoAporte, DEFAULTS_SIMULAR, MesOutput } from './types'
+import { EventoAporte, DEFAULTS_SIMULAR, MesData } from './types'
 
 describe('Motor Matemático - simulation.ts', () => {
   describe('Baselines (Sem Aportes Extras)', () => {
@@ -61,7 +61,7 @@ describe('Motor Matemático - simulation.ts', () => {
       expect(out.prazoReal).toBeLessThan(360)
 
       // Verifica se no mês 12 ocorreu o aporte extra
-      const mes12 = out.serie.find((m: MesOutput) => m.mes === 12)
+      const mes12 = out.serie.find((m: MesData) => m.mes === 12)
       expect(mes12).toBeDefined()
       expect(mes12!.aporteExtra).toBe(5000)
     })
