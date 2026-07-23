@@ -1,0 +1,777 @@
+diff --git a/.agents/rules/antigravity-rtk-rules.md b/.agents/rules/antigravity-rtk-rules.md
+new file mode 100644
+index 0000000..8ee44bc
+--- /dev/null
++++ b/.agents/rules/antigravity-rtk-rules.md
+@@ -0,0 +1,32 @@
++# RTK - Rust Token Killer (Google Antigravity)
++
++**Usage**: Token-optimized CLI proxy for shell commands.
++
++## Rule
++
++Always prefix shell commands with `rtk` to minimize token consumption.
++
++Examples:
++
++```bash
++rtk git status
++rtk cargo test
++rtk ls src/
++rtk grep "pattern" src/
++rtk find "*.rs" .
++rtk docker ps
++rtk gh pr list
++```
++
++## Meta Commands
++
++```bash
++rtk gain              # Show token savings
++rtk gain --history    # Command history with savings
++rtk discover          # Find missed RTK opportunities
++rtk proxy <cmd>       # Run raw (no filtering, for debugging)
++```
++
++## Why
++
++RTK filters and compresses command output before it reaches the LLM context, saving 60-90% tokens on common operations. Always use `rtk <cmd>` instead of raw commands.
+diff --git a/.rtk/filters.toml b/.rtk/filters.toml
+new file mode 100644
+index 0000000..d9bd43f
+--- /dev/null
++++ b/.rtk/filters.toml
+@@ -0,0 +1,13 @@
++# Project-local RTK filters — commit this file with your repo.
++# Filters here override user-global and built-in filters.
++# Docs: https://github.com/rtk-ai/rtk#custom-filters
++schema_version = 1
++
++# Example: suppress build noise from a custom tool
++# [filters.my-tool]
++# description = "Compact my-tool output"
++# match_command = "^my-tool\\s+build"
++# strip_ansi = true
++# strip_lines_matching = ["^\\s*$", "^Downloading", "^Installing"]
++# max_lines = 30
++# on_empty = "my-tool: ok"
+diff --git a/CLAUDE.md b/CLAUDE.md
+index 43c994c..2b4a40a 100644
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -1 +1,140 @@
+ @AGENTS.md
++
++<!-- rtk-instructions v2 -->
++# RTK (Rust Token Killer) - Token-Optimized Commands
++
++## Golden Rule
++
++**Always prefix commands with `rtk`**. If RTK has a dedicated filter, it uses it. If not, it passes through unchanged. This means RTK is always safe to use.
++
++**Important**: Even in command chains with `&&`, use `rtk`:
++```bash
++# ❌ Wrong
++git add . && git commit -m "msg" && git push
++
++# ✅ Correct
++rtk git add . && rtk git commit -m "msg" && rtk git push
++```
++
++## RTK Commands by Workflow
++
++### Build & Compile (80-90% savings)
++```bash
++rtk cargo build         # Cargo build output
++rtk cargo check         # Cargo check output
++rtk cargo clippy        # Clippy warnings grouped by file (80%)
++rtk tsc                 # TypeScript errors grouped by file/code (83%)
++rtk lint                # ESLint/Biome violations grouped (84%)
++rtk prettier --check    # Files needing format only (70%)
++rtk next build          # Next.js build with route metrics (87%)
++```
++
++### Test (60-99% savings)
++```bash
++rtk cargo test          # Cargo test failures only (90%)
++rtk go test             # Go test failures only (90%)
++rtk jest                # Jest failures only (99.5%)
++rtk vitest              # Vitest failures only (99.5%)
++rtk playwright test     # Playwright failures only (94%)
++rtk pytest              # Python test failures only (90%)
++rtk rake test           # Ruby test failures only (90%)
++rtk rspec               # RSpec test failures only (60%)
++rtk test <cmd>          # Generic test wrapper - failures only
++```
++
++### Git (59-80% savings)
++```bash
++rtk git status          # Compact status
++rtk git log             # Compact log (works with all git flags)
++rtk git diff            # Compact diff (80%)
++rtk git show            # Compact show (80%)
++rtk git add             # Ultra-compact confirmations (59%)
++rtk git commit          # Ultra-compact confirmations (59%)
++rtk git push            # Ultra-compact confirmations
++rtk git pull            # Ultra-compact confirmations
++rtk git branch          # Compact branch list
++rtk git fetch           # Compact fetch
++rtk git stash           # Compact stash
++rtk git worktree        # Compact worktree
++```
++
++Note: Git passthrough works for ALL subcommands, even those not explicitly listed.
++
++### GitHub (26-87% savings)
++```bash
++rtk gh pr view <num>    # Compact PR view (87%)
++rtk gh pr checks        # Compact PR checks (79%)
++rtk gh run list         # Compact workflow runs (82%)
++rtk gh issue list       # Compact issue list (80%)
++rtk gh api              # Compact API responses (26%)
++```
++
++### JavaScript/TypeScript Tooling (70-90% savings)
++```bash
++rtk pnpm list           # Compact dependency tree (70%)
++rtk pnpm outdated       # Compact outdated packages (80%)
++rtk pnpm install        # Compact install output (90%)
++rtk npm run <script>    # Compact npm script output
++rtk npx <cmd>           # Compact npx command output
++rtk prisma              # Prisma without ASCII art (88%)
++```
++
++### Files & Search (60-75% savings)
++```bash
++rtk ls <path>           # Tree format, compact (65%)
++rtk read <file>         # Code reading with filtering (60%)
++rtk grep <pattern>      # Search grouped by file (75%). Format flags (-c, -l, -L, -o, -Z) run raw.
++rtk find <pattern>      # Find grouped by directory (70%)
++```
++
++### Analysis & Debug (70-90% savings)
++```bash
++rtk err <cmd>           # Filter errors only from any command
++rtk log <file>          # Deduplicated logs with counts
++rtk json <file>         # JSON structure without values
++rtk deps                # Dependency overview
++rtk env                 # Environment variables compact
++rtk summary <cmd>       # Smart summary of command output
++rtk diff                # Ultra-compact diffs
++```
++
++### Infrastructure (85% savings)
++```bash
++rtk docker ps           # Compact container list
++rtk docker images       # Compact image list
++rtk docker logs <c>     # Deduplicated logs
++rtk kubectl get         # Compact resource list
++rtk kubectl logs        # Deduplicated pod logs
++```
++
++### Network (65-70% savings)
++```bash
++rtk curl <url>          # Compact HTTP responses (70%)
++rtk wget <url>          # Compact download output (65%)
++```
++
++### Meta Commands
++```bash
++rtk gain                # View token savings statistics
++rtk gain --history      # View command history with savings
++rtk discover            # Analyze Claude Code sessions for missed RTK usage
++rtk proxy <cmd>         # Run command without filtering (for debugging)
++rtk init                # Add RTK instructions to CLAUDE.md
++rtk init --global       # Add RTK to ~/.claude/CLAUDE.md
++```
++
++## Token Savings Overview
++
++| Category | Commands | Typical Savings |
++|----------|----------|-----------------|
++| Tests | vitest, playwright, cargo test | 90-99% |
++| Build | next, tsc, lint, prettier | 70-87% |
++| Git | status, log, diff, add, commit | 59-80% |
++| GitHub | gh pr, gh run, gh issue | 26-87% |
++| Package Managers | pnpm, npm, npx | 70-90% |
++| Files | ls, read, grep, find | 60-75% |
++| Infrastructure | docker, kubectl | 85% |
++| Network | curl, wget | 65-70% |
++
++Overall average: **60-90% token reduction** on common development operations.
++<!-- /rtk-instructions -->
+\ No newline at end of file
+diff --git a/docs/specs/aceleracao-clt.md b/docs/specs/aceleracao-clt.md
+new file mode 100644
+index 0000000..34622b3
+--- /dev/null
++++ b/docs/specs/aceleracao-clt.md
+@@ -0,0 +1,46 @@
++## Problem Statement
++
++Users of the real estate financing simulator need to manually calculate and input their complex annual benefits (such as 13th salary, vacations) and their monthly FGTS deposits to see how these impact their financing. This manual calculation is error-prone, tedious, and discourages users from discovering how much time and money they can save by injecting these benefits.
++
++## Solution
++
++A "1-Click Acceleration Hub" (Hub de Aceleração CLT) that allows users to simply input their gross salary and instantly activate automated schedules for 13º Salário, Férias, and FGTS. The system automatically calculates the correct amounts, frequencies, and start dates for these benefits, applying them to the simulation as "term reduction" (reduzir prazo) amortizations.
++
++## User Stories
++
++1. As a CLT worker, I want to input my gross salary once, so that I don't have to manually calculate my benefits.
++2. As a CLT worker, I want to toggle my 13th salary on, so that the simulator automatically schedules an extra amortization every 12 months starting on month 12.
++3. As a CLT worker, I want to toggle my Vacation bonus (1/3 of salary) on, so that the simulator automatically schedules an extra amortization every 12 months starting on month 6.
++4. As a worker with FGTS, I want the simulator to automatically calculate 8% of my gross salary as my monthly FGTS deposit, so that I don't have to check my paycheck.
++5. As a worker with FGTS, I want to explicitly see the estimated monthly FGTS deposit, so that I can verify it matches my reality.
++6. As a worker with specific FGTS discounts or multiple income sources, I want to be able to manually override the calculated FGTS deposit amount, so that my simulation remains accurate.
++7. As a worker using FGTS, I want to specify how often (in months) I will withdraw my Saque-Aniversário to amortize my balance, so that the simulation reflects my real-life strategy.
++8. As a user experimenting with scenarios, I want these automatic benefits to be visually distinct in my "Extra Amortizations" list, so that I know they are managed by the acceleration panel and not manual entries.
++9. As a user experimenting with scenarios, I want the automatic benefits to always apply the "reduce term" (reduzir prazo) effect, so that I maximize my interest savings.
++
++## Implementation Decisions
++
++- We built the `CLTTemplates` component to act as the Hub de Aceleração 1-Click.
++- The state of the UI is driven by `params.fgtsDeposito` (for FGTS) and the existence of specific `id`s in the `eventos` array (for 13º and Férias).
++- When the user modifies their `salario` (Gross Salary) input, the component automatically updates the values of active 13º and Férias events, and overrides the `fgtsDeposito` (recalculating 8% of the salary) seamlessly via `useEffect`.
++- `EventoAporte` interface was extended with `geradoPor: 'template'` to track automatic events.
++- In `EventList.tsx`, events with `geradoPor: 'template'` cannot be directly deleted via the list (the 'X' button removes them by interacting with the state, which untoggles the button in the Hub). They receive a distinct "Automático" badge.
++- FGTS was integrated into the hub and removed from the main `InputPanel.tsx`, centralizing all benefit-related configurations in one place.
++
++## Testing Decisions
++
++- Tests should verify that when the gross salary changes, the `onUpdateParam` callback is called with exactly 8% of the new salary for FGTS.
++- Tests should verify that toggling 13th Salary calls `onUpsert` with `frequencia: 12`, `mesInicio: 12`, and `valor` equal to the gross salary.
++- Tests should verify that toggling Férias calls `onUpsert` with `frequencia: 12`, `mesInicio: 6`, and `valor` equal to 1/3 of the gross salary.
++- Engine/Integration tests should verify that `CenarioBuilder` correctly applies an event marked as `geradoPor: 'template'` without mutating its intrinsic properties differently than manual events.
++- The `CLTTemplates` UI component is the primary module for these tests.
++- Prior art: React Testing Library component tests checking for button clicks and callback assertions.
++
++## Out of Scope
++
++- Calculating exact income tax deductions to derive net salary from gross salary automatically (too complex, depends on dependents, other deductions, etc.). We rely on the user providing their preferred base salary.
++- Allowing the user to change the start month of the 13º or Férias directly from the UI (they default to 12 and 6, respectively, to maintain the "1-Click" simplicity).
++
++## Further Notes
++
++- The decision to keep the explicit `Depósito mensal FGTS` input visible while defaulting it to 8% of the gross salary provides a perfect balance between automation and flexibility for advanced users.
+diff --git a/src/app/SimulatorClient.tsx b/src/app/SimulatorClient.tsx
+index d51fd60..6d8a0b7 100644
+--- a/src/app/SimulatorClient.tsx
++++ b/src/app/SimulatorClient.tsx
+@@ -54,6 +54,10 @@ export function SimulatorClient() {
+     dispatch({ type: 'REMOVE_EVENTO', id })
+   }
+ 
++  function upsertEvento(ev: EventoAporte) {
++    dispatch({ type: 'UPSERT_EVENTO', payload: ev })
++  }
++
+   function saveRowEvento(mes: number, novos: EventoAporte[]) {
+     dispatch({ type: 'SET_OVERRIDE', mes, payload: novos })
+   }
+@@ -108,6 +112,8 @@ export function SimulatorClient() {
+           params={state.params}
+           onRemoveGrupo={removeGrupo}
+           onRemoveEvento={removeEvento}
++          onUpsertEvento={upsertEvento}
++          onUpdateParam={(k, v) => dispatch({ type: 'UPDATE_PARAM', key: k, value: v })}
+           onAddClick={() => setModalOpen(true)}
+           onSACTransformClick={() => setSacTransformOpen(true)}
+           onClearAll={() => dispatch({ type: 'SET_EVENTOS', payload: [] })}
+diff --git a/src/components/amortization/CLTTemplates.tsx b/src/components/amortization/CLTTemplates.tsx
+new file mode 100644
+index 0000000..3a70c87
+--- /dev/null
++++ b/src/components/amortization/CLTTemplates.tsx
+@@ -0,0 +1,213 @@
++import { useState, useEffect } from 'react'
++import { EventoAporte, Params } from '@/lib/engine/types'
++import { InputField } from '@/components/inputs/InputField'
++
++interface Props {
++  eventos: EventoAporte[]
++  params: Params
++  onUpsert: (ev: EventoAporte) => void
++  onRemove: (id: string) => void
++  onUpdateParam: (key: keyof Params, value: number) => void
++}
++
++export function CLTTemplates({ eventos, params, onUpsert, onRemove, onUpdateParam }: Props) {
++  const [salario, setSalario] = useState('5000')
++  const [showInput, setShowInput] = useState(false)
++
++  const active13 = eventos.some((e) => e.id === 'template-13-salario')
++  const activeFerias = eventos.some((e) => e.id === 'template-ferias')
++  const activeFgts = params.fgtsDeposito > 0
++  
++  // Exibe o input automaticamente se algum dos templates estiver ativo
++  useEffect(() => {
++    if (active13 || activeFerias) {
++      setShowInput(true)
++    }
++  }, [active13, activeFerias])
++
++  // Quando o salário mudar, atualiza os eventos ativos
++  useEffect(() => {
++    const valor = parseFloat(salario) || 0
++    if (valor <= 0) return
++
++    if (active13) {
++      const ev = eventos.find((e) => e.id === 'template-13-salario')
++      if (ev && ev.valor !== valor) {
++        onUpsert({ ...ev, valor })
++      }
++    }
++
++    if (activeFerias) {
++      const ev = eventos.find((e) => e.id === 'template-ferias')
++      const terço = valor / 3
++      if (ev && Math.abs(ev.valor - terço) > 0.01) {
++        onUpsert({ ...ev, valor: terço })
++      }
++    }
++
++    if (activeFgts) {
++      const deposito = valor * 0.08
++      if (Math.abs(params.fgtsDeposito - deposito) > 0.01) {
++        onUpdateParam('fgtsDeposito', deposito)
++      }
++    }
++  }, [salario]) // eslint-disable-line react-hooks/exhaustive-deps
++
++  function toggle13() {
++    if (active13) {
++      onRemove('template-13-salario')
++    } else {
++      const valor = parseFloat(salario) || 0
++      if (valor <= 0) return
++      onUpsert({
++        id: 'template-13-salario',
++        mesInicio: 12,
++        frequencia: 12,
++        valor,
++        efeito: 'reduzir_prazo',
++        fgts: false,
++        geradoPor: 'template',
++      })
++      setShowInput(true)
++    }
++  }
++
++  function toggleFerias() {
++    if (activeFerias) {
++      onRemove('template-ferias')
++    } else {
++      const valor = parseFloat(salario) || 0
++      if (valor <= 0) return
++      onUpsert({
++        id: 'template-ferias',
++        mesInicio: 6, // Começa no meio do ano ao invés do mês 1
++        frequencia: 12,
++        valor: valor / 3,
++        efeito: 'reduzir_prazo',
++        fgts: false,
++        geradoPor: 'template',
++      })
++      setShowInput(true)
++    }
++  }
++
++  function toggleFgts() {
++    if (activeFgts) {
++      onUpdateParam('fgtsDeposito', 0)
++    } else {
++      if (params.fgtsDeposito === 0) {
++        const base = parseFloat(salario) || 5000
++        onUpdateParam('fgtsDeposito', base * 0.08)
++      }
++    }
++  }
++
++  return (
++    <div className="bg-gradient-to-br from-blue-900/30 to-purple-900/20 border border-blue-800/40 rounded-2xl p-4 flex flex-col gap-4">
++      <div>
++        <h3 className="text-white font-semibold text-sm flex items-center gap-2">
++          <span>⚡</span> Aceleração 1-Click (CLT)
++        </h3>
++        <p className="text-xs text-blue-200/70 mt-1 leading-relaxed">
++          Simule o impacto de injetar benefícios anuais no seu financiamento. 
++          O efeito é sempre "reduzir prazo" para maximizar a economia de juros.
++        </p>
++      </div>
++
++      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
++        <button
++          onClick={toggle13}
++          className={`relative overflow-hidden flex flex-col items-start gap-1 p-3 rounded-xl border text-left transition-all ${
++            active13
++              ? 'bg-blue-600/20 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
++              : 'bg-gray-800/50 border-gray-700/50 hover:border-gray-600'
++          }`}
++        >
++          <div className="flex items-center justify-between w-full">
++            <span className={`text-sm font-medium ${active13 ? 'text-blue-400' : 'text-gray-300'}`}>
++              13º Salário
++            </span>
++            <div className={`w-3 h-3 rounded-full border-2 ${active13 ? 'border-blue-400 bg-blue-500' : 'border-gray-600'}`} />
++          </div>
++          <span className="text-[10px] text-gray-500">1x salário a cada 12m</span>
++        </button>
++
++        <button
++          onClick={toggleFerias}
++          className={`relative overflow-hidden flex flex-col items-start gap-1 p-3 rounded-xl border text-left transition-all ${
++            activeFerias
++              ? 'bg-purple-600/20 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.2)]'
++              : 'bg-gray-800/50 border-gray-700/50 hover:border-gray-600'
++          }`}
++        >
++          <div className="flex items-center justify-between w-full">
++            <span className={`text-sm font-medium ${activeFerias ? 'text-purple-400' : 'text-gray-300'}`}>
++              Férias (1/3)
++            </span>
++            <div className={`w-3 h-3 rounded-full border-2 ${activeFerias ? 'border-purple-400 bg-purple-500' : 'border-gray-600'}`} />
++          </div>
++          <span className="text-[10px] text-gray-500">1/3 do salário ao ano</span>
++        </button>
++
++        <button
++          onClick={toggleFgts}
++          className={`col-span-2 md:col-span-1 relative overflow-hidden flex flex-col items-start gap-1 p-3 rounded-xl border text-left transition-all ${
++            activeFgts
++              ? 'bg-emerald-600/20 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
++              : 'bg-gray-800/50 border-gray-700/50 hover:border-gray-600'
++          }`}
++        >
++          <div className="flex items-center justify-between w-full">
++            <span className={`text-sm font-medium ${activeFgts ? 'text-emerald-400' : 'text-gray-300'}`}>
++              Usar FGTS
++            </span>
++            <div className={`w-3 h-3 rounded-full border-2 ${activeFgts ? 'border-emerald-400 bg-emerald-500' : 'border-gray-600'}`} />
++          </div>
++          <span className="text-[10px] text-gray-500">Saque-aniversário p/ abater</span>
++        </button>
++      </div>
++
++      {showInput && (
++        <div className="pt-2 border-t border-blue-900/30 animate-fade-in">
++          <InputField
++            label="Seu salário bruto (Base de cálculo)"
++            tooltip="Usado para calcular automaticamente o FGTS (8%), 13º e Férias."
++            value={salario}
++            onChange={setSalario}
++            prefix="R$"
++            placeholder="5000"
++            monetary
++          />
++        </div>
++      )}
++
++      {activeFgts && (
++        <div className="pt-2 border-t border-emerald-900/30 animate-fade-in flex flex-col sm:flex-row gap-3">
++          <div className="flex-1">
++            <InputField
++              label="Depósito mensal FGTS"
++              tooltip="Valor que cai na conta do FGTS (padrão 8% do Salário). Você pode alterar se o seu for diferente."
++              value={String(params.fgtsDeposito)}
++              onChange={(v) => onUpdateParam('fgtsDeposito', parseFloat(v) || 0)}
++              prefix="R$"
++              placeholder="400"
++              monetary
++            />
++          </div>
++          <div className="flex-1">
++            <InputField
++              label="Usar a cada"
++              value={String(params.fgtsFrequencia)}
++              onChange={(v) => onUpdateParam('fgtsFrequencia', parseFloat(v) || 0)}
++              suffix="meses"
++              placeholder="24"
++              min={12}
++              max={360}
++              step={12}
++            />
++          </div>
++        </div>
++      )}
++    </div>
++  )
++}
+diff --git a/src/components/amortization/EventList.tsx b/src/components/amortization/EventList.tsx
+index 2430b7a..4085be5 100644
+--- a/src/components/amortization/EventList.tsx
++++ b/src/components/amortization/EventList.tsx
+@@ -2,6 +2,7 @@
+ 
+ import { XIcon } from '@/components/ui/icons'
+ import { EventoAporte, Params } from '@/lib/engine/types'
++import { CLTTemplates } from './CLTTemplates'
+ 
+ function moeda(n: number): string {
+   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+@@ -12,6 +13,8 @@ interface Props {
+   params: Params
+   onRemoveGrupo: (grupoId: string) => void
+   onRemoveEvento: (id: string) => void
++  onUpsertEvento: (ev: EventoAporte) => void
++  onUpdateParam: (key: keyof Params, value: number) => void
+   onAddClick: () => void
+   onSACTransformClick: () => void
+   onClearAll: () => void
+@@ -23,10 +26,11 @@ function gruparEventos(eventos: EventoAporte[]) {
+   const individuais: EventoAporte[] = []
+ 
+   for (const ev of eventos) {
+-    if (ev.grupoId) {
+-      const g = grupos.get(ev.grupoId) ?? []
++    if (ev.grupoId || ev.geradoPor === 'template') {
++      const gId = ev.grupoId || ev.id // usa o próprio id como grupo se for template
++      const g = grupos.get(gId) ?? []
+       g.push(ev)
+-      grupos.set(ev.grupoId, g)
++      grupos.set(gId, g)
+     } else {
+       individuais.push(ev)
+     }
+@@ -36,16 +40,26 @@ function gruparEventos(eventos: EventoAporte[]) {
+ }
+ 
+ export function EventList({
+-  eventos, params, onRemoveGrupo, onRemoveEvento, onAddClick, onSACTransformClick, onClearAll, sistemaProposta,
++  eventos, params, onRemoveGrupo, onRemoveEvento, onUpsertEvento, onUpdateParam, onAddClick, onSACTransformClick, onClearAll, sistemaProposta,
+ }: Props) {
+   const fgtsAuto = params.fgtsDeposito > 0
+   const { grupos, individuais } = gruparEventos(eventos)
+   const hasEventos = eventos.length > 0
+ 
+   return (
+-    <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800 flex flex-col gap-3">
+-      <div className="flex items-center justify-between">
+-        <h3 className="text-white font-semibold text-sm">Aportes extras</h3>
++    <div className="flex flex-col gap-4">
++      {/* Templates de 1-Click */}
++      <CLTTemplates
++        eventos={eventos}
++        params={params}
++        onUpsert={onUpsertEvento}
++        onRemove={onRemoveEvento}
++        onUpdateParam={onUpdateParam}
++      />
++
++      <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800 flex flex-col gap-3">
++        <div className="flex items-center justify-between">
++          <h3 className="text-white font-semibold text-sm">Aportes extras</h3>
+         <div className="flex gap-2">
+           {hasEventos && (
+             <button
+@@ -72,7 +86,7 @@ export function EventList({
+         </div>
+       </div>
+ 
+-      {/* FGTS automático — derivado dos parâmetros, não removível aqui */}
++      {/* FGTS automático — derivado dos parâmetros, não removível aqui, apenas editável via CLTTemplates */}
+       {fgtsAuto && (
+         <div className="flex items-center justify-between bg-emerald-900/20 border border-emerald-800/40 rounded-xl px-3 py-2.5">
+           <div>
+@@ -80,10 +94,10 @@ export function EventList({
+               FGTS automático · {moeda(params.fgtsDeposito * params.fgtsFrequencia)} a cada {params.fgtsFrequencia} meses
+             </p>
+             <p className="text-xs text-emerald-600 mt-0.5">
+-              Configurado nos parâmetros · amortiza saldo devedor
++              Editável no painel de Aceleração · amortiza saldo devedor
+             </p>
+           </div>
+-          <span className="text-xs text-emerald-700 ml-3">auto</span>
++          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-900/50 text-emerald-400 border border-emerald-800">Automático</span>
+         </div>
+       )}
+ 
+@@ -93,25 +107,40 @@ export function EventList({
+         </p>
+       )}
+ 
+-      {/* Grupos */}
+-      {Array.from(grupos.entries()).map(([grupoId, evs]) => {
++      {Array.from(grupos.entries()).map(([gId, evs]) => {
+         const primeiro = evs[0]
+-        const label = primeiro.geradoPor === 'sac-transform'
+-          ? `Price → SAC (${evs.length} eventos gerados)`
+-          : `Lote: ${moeda(primeiro.valor)} a cada ${primeiro.frequencia ?? 1}m`
++        let label = ''
++        if (primeiro.geradoPor === 'sac-transform') {
++          label = `Price → SAC (${evs.length} eventos gerados)`
++        } else if (primeiro.geradoPor === 'template') {
++          label = primeiro.id === 'template-13-salario' ? '13º Salário' : 'Férias (1/3)'
++        } else {
++          label = `Lote: ${moeda(primeiro.valor)} a cada ${primeiro.frequencia ?? 1}m`
++        }
+ 
+         return (
+-          <div key={grupoId} className="flex items-center justify-between bg-gray-800 rounded-xl px-3 py-2.5">
++          <div key={gId} className="flex items-center justify-between bg-gray-800 rounded-xl px-3 py-2.5">
+             <div>
+-              <p className="text-sm text-white">{label}</p>
++              <div className="flex items-center gap-2">
++                <p className="text-sm text-white">{label}</p>
++                {primeiro.geradoPor === 'template' && (
++                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-blue-900/50 text-blue-300 border border-blue-800">Automático</span>
++                )}
++              </div>
+               <p className="text-xs text-gray-500 mt-0.5">
+-                Mês {primeiro.mesInicio}{primeiro.mesFim ? ` → ${primeiro.mesFim}` : ''} ·{' '}
++                {moeda(primeiro.valor)} no Mês {primeiro.mesInicio}{primeiro.mesFim ? ` → ${primeiro.mesFim}` : ''} (a cada {primeiro.frequencia}m) ·{' '}
+                 {primeiro.efeito === 'reduzir_prazo' ? 'reduz prazo' : 'reduz parcela'}
+                 {primeiro.fgts ? ' · FGTS' : ''}
+               </p>
+             </div>
+             <button
+-              onClick={() => onRemoveGrupo(grupoId)}
++              onClick={() => {
++                if (primeiro.geradoPor === 'template') {
++                  onRemoveEvento(primeiro.id)
++                } else {
++                  onRemoveGrupo(gId)
++                }
++              }}
+               className="p-1.5 rounded-lg text-gray-600 hover:text-red-400 hover:bg-gray-700 transition-all cursor-pointer ml-2 flex-shrink-0"
+             >
+               <XIcon className="w-4 h-4" />
+@@ -139,7 +168,8 @@ export function EventList({
+             ×
+           </button>
+         </div>
+-      ))}
++        ))}
++      </div>
+     </div>
+   )
+ }
+diff --git a/src/components/inputs/InputPanel.tsx b/src/components/inputs/InputPanel.tsx
+index 7fc24c3..075e196 100644
+--- a/src/components/inputs/InputPanel.tsx
++++ b/src/components/inputs/InputPanel.tsx
+@@ -18,7 +18,6 @@ function mipPct(n: number): string { return String((n * 100).toFixed(5)) }
+ 
+ export function InputPanel({ state, dispatch }: Props) {
+   const { params } = state
+-  const [showFgts, setShowFgts] = useState(params.fgtsDeposito > 0)
+ 
+   function updateParam(key: keyof Params, raw: string) {
+     const value = raw === '' ? 0 : parseFloat(raw)
+@@ -153,34 +152,6 @@ export function InputPanel({ state, dispatch }: Props) {
+               ))}
+             </div>
+           </div>
+-
+-          {/* FGTS toggle compacto — sempre visível na linha */}
+-          <div className="flex flex-col gap-1">
+-            <label className="text-sm text-gray-300 font-medium">FGTS</label>
+-            <div className="flex items-center gap-2 bg-gray-800 rounded-xl px-3 py-2.5 h-[42px]">
+-              <button
+-                onClick={() => {
+-                  if (showFgts) {
+-                    setShowFgts(false)
+-                    dispatch({ type: 'UPDATE_PARAM', key: 'fgtsDeposito', value: 0 })
+-                  } else {
+-                    setShowFgts(true)
+-                    if (params.fgtsDeposito === 0) {
+-                      dispatch({ type: 'UPDATE_PARAM', key: 'fgtsDeposito', value: 500 })
+-                    }
+-                  }
+-                }}
+-                className={`w-9 h-5 rounded-full transition-all relative flex-shrink-0 ${showFgts ? 'bg-emerald-500' : 'bg-gray-600'}`}
+-              >
+-                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all pointer-events-none ${showFgts ? 'left-4' : 'left-0.5'}`} />
+-              </button>
+-              <span className="text-xs text-gray-400 whitespace-nowrap">
+-                {showFgts
+-                  ? `R$${params.fgtsDeposito.toLocaleString('pt-BR')}/mês`
+-                  : 'Desativado'}
+-              </span>
+-            </div>
+-          </div>
+         </div>
+ 
+         {/* Subtexto sistema */}
+@@ -191,46 +162,6 @@ export function InputPanel({ state, dispatch }: Props) {
+         </p>
+       </div>
+ 
+-      {/* Linha FGTS — aparece quando ativado */}
+-      {showFgts && (
+-        <div className="border-t border-gray-800 px-4 py-3 flex flex-col gap-3 lg:flex-row lg:items-end lg:gap-3 rounded-b-2xl">
+-          <div className="lg:w-40">
+-            <InputField
+-              label="Depósito mensal FGTS"
+-              tooltip="Quanto cai na sua conta do FGTS por mês. Geralmente 8% do salário bruto."
+-              value={fmt(params.fgtsDeposito)}
+-              onChange={(v) => updateParam('fgtsDeposito', v)}
+-              prefix="R$"
+-              placeholder="500"
+-              monetary
+-            />
+-          </div>
+-
+-          <div className="lg:w-36">
+-            <InputField
+-              label="Usar a cada"
+-              tooltip="Com que frequência usar o FGTS. Mínimo legal: 12 meses. Mais comum: 24 meses."
+-              value={fmt(params.fgtsFrequencia)}
+-              onChange={(v) => updateParam('fgtsFrequencia', v)}
+-              suffix="meses"
+-              placeholder="24"
+-              min={12}
+-              max={360}
+-              step={12}
+-            />
+-          </div>
+-
+-          <div className="flex flex-col gap-1 justify-end pb-0.5">
+-            <p className="text-xs text-gray-500">
+-              Acumulado por uso:{' '}
+-              <span className="text-emerald-400 font-medium">
+-                R$ {(params.fgtsDeposito * params.fgtsFrequencia).toLocaleString('pt-BR')}
+-              </span>
+-            </p>
+-          </div>
+-        </div>
+-      )}
+-
+       {/* FAB + modal da simulação Caixa — renderizado fora do layout de inputs */}
+       <CaixaApiImport state={state} dispatch={dispatch} />
+     </div>
+diff --git a/src/lib/engine/state.ts b/src/lib/engine/state.ts
+index ba4dabf..a805d56 100644
+--- a/src/lib/engine/state.ts
++++ b/src/lib/engine/state.ts
+@@ -5,6 +5,7 @@ export type AppAction =
+   | { type: 'UPDATE_PARAMS'; payload: Partial<Params> }
+   | { type: 'ADD_EVENTO'; payload: EventoAporte }
+   | { type: 'ADD_EVENTOS'; payload: EventoAporte[] }
++  | { type: 'UPSERT_EVENTO'; payload: EventoAporte }
+   | { type: 'REMOVE_EVENTO'; id: string }
+   | { type: 'REMOVE_GRUPO'; grupoId: string }
+   | { type: 'SET_OVERRIDE'; mes: number; payload: EventoAporte[] }
+@@ -21,6 +22,10 @@ export function appReducer(state: AppState, action: AppAction): AppState {
+       return { ...state, eventos: [...state.eventos, action.payload] }
+     case 'ADD_EVENTOS':
+       return { ...state, eventos: [...state.eventos, ...action.payload] }
++    case 'UPSERT_EVENTO': {
++      const filtered = state.eventos.filter(e => e.id !== action.payload.id)
++      return { ...state, eventos: [...filtered, action.payload] }
++    }
+     case 'REMOVE_EVENTO':
+       return { ...state, eventos: state.eventos.filter(e => e.id !== action.id) }
+     case 'REMOVE_GRUPO':
+diff --git a/src/lib/engine/types.ts b/src/lib/engine/types.ts
+index 733414f..30c7686 100644
+--- a/src/lib/engine/types.ts
++++ b/src/lib/engine/types.ts
+@@ -22,7 +22,7 @@ export interface EventoAporte {
+   valor: number
+   efeito: EfeitoAporte
+   fgts: boolean
+-  geradoPor: 'lote' | 'sac-transform' | 'override'
++  geradoPor: 'lote' | 'sac-transform' | 'override' | 'template'
+   grupoId?: string
+ }
+ 

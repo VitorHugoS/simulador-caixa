@@ -5,6 +5,7 @@ export type AppAction =
   | { type: 'UPDATE_PARAMS'; payload: Partial<Params> }
   | { type: 'ADD_EVENTO'; payload: EventoAporte }
   | { type: 'ADD_EVENTOS'; payload: EventoAporte[] }
+  | { type: 'UPSERT_EVENTO'; payload: EventoAporte }
   | { type: 'REMOVE_EVENTO'; id: string }
   | { type: 'REMOVE_GRUPO'; grupoId: string }
   | { type: 'SET_OVERRIDE'; mes: number; payload: EventoAporte[] }
@@ -21,6 +22,10 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, eventos: [...state.eventos, action.payload] }
     case 'ADD_EVENTOS':
       return { ...state, eventos: [...state.eventos, ...action.payload] }
+    case 'UPSERT_EVENTO': {
+      const filtered = state.eventos.filter(e => e.id !== action.payload.id)
+      return { ...state, eventos: [...filtered, action.payload] }
+    }
     case 'REMOVE_EVENTO':
       return { ...state, eventos: state.eventos.filter(e => e.id !== action.id) }
     case 'REMOVE_GRUPO':

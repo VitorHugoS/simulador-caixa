@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useId } from 'react'
 import { InfoIcon } from '@/components/ui/icons'
 
 interface Props {
@@ -38,6 +38,7 @@ export function InputField({
   max,
   monetary = false,
 }: Props) {
+  const id = useId()
   const [showTooltip, setShowTooltip] = useState(false)
 
   // Enquanto o campo está focado, o usuário é "dono" do valor.
@@ -139,7 +140,7 @@ export function InputField({
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-1">
-        <label className="text-sm text-gray-300 font-medium">{label}</label>
+        <label htmlFor={id} className="text-sm text-gray-300 font-medium">{label}</label>
         {tooltip && (
           <div className="relative">
             <button
@@ -166,6 +167,7 @@ export function InputField({
           <span className="px-3 text-gray-500 text-sm border-r border-gray-700 py-3">{prefix}</span>
         )}
         <input
+          id={id}
           type={monetary ? 'tel' : type === 'number' ? 'text' : type}
           inputMode={type === 'number' || monetary ? 'decimal' : undefined}
           value={localValue}

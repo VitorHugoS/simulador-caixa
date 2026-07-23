@@ -22,7 +22,7 @@ export interface EventoAporte {
   valor: number
   efeito: EfeitoAporte
   fgts: boolean
-  geradoPor: 'lote' | 'sac-transform' | 'override'
+  geradoPor: 'lote' | 'sac-transform' | 'override' | 'template'
   grupoId?: string
 }
 

@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { AppState, Params, Sistema } from '@/lib/engine/types'
 import { InputField } from './InputField'
 import { CaixaApiImport } from './CaixaApiImport'
@@ -18,7 +17,6 @@ function mipPct(n: number): string { return String((n * 100).toFixed(5)) }
 
 export function InputPanel({ state, dispatch }: Props) {
   const { params } = state
-  const [showFgts, setShowFgts] = useState(params.fgtsDeposito > 0)
 
   function updateParam(key: keyof Params, raw: string) {
     const value = raw === '' ? 0 : parseFloat(raw)
@@ -153,34 +151,6 @@ export function InputPanel({ state, dispatch }: Props) {
               ))}
             </div>
           </div>
-
-          {/* FGTS toggle compacto — sempre visível na linha */}
-          <div className="flex flex-col gap-1">
-            <label className="text-sm text-gray-300 font-medium">FGTS</label>
-            <div className="flex items-center gap-2 bg-gray-800 rounded-xl px-3 py-2.5 h-[42px]">
-              <button
-                onClick={() => {
-                  if (showFgts) {
-                    setShowFgts(false)
-                    dispatch({ type: 'UPDATE_PARAM', key: 'fgtsDeposito', value: 0 })
-                  } else {
-                    setShowFgts(true)
-                    if (params.fgtsDeposito === 0) {
-                      dispatch({ type: 'UPDATE_PARAM', key: 'fgtsDeposito', value: 500 })
-                    }
-                  }
-                }}
-                className={`w-9 h-5 rounded-full transition-all relative flex-shrink-0 ${showFgts ? 'bg-emerald-500' : 'bg-gray-600'}`}
-              >
-                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all pointer-events-none ${showFgts ? 'left-4' : 'left-0.5'}`} />
-              </button>
-              <span className="text-xs text-gray-400 whitespace-nowrap">
-                {showFgts
-                  ? `R$${params.fgtsDeposito.toLocaleString('pt-BR')}/mês`
-                  : 'Desativado'}
-              </span>
-            </div>
-          </div>
         </div>
 
         {/* Subtexto sistema */}
@@ -190,46 +160,6 @@ export function InputPanel({ state, dispatch }: Props) {
             : 'Price: parcela fixa, amortiza pouco nos primeiros anos.'}
         </p>
       </div>
-
-      {/* Linha FGTS — aparece quando ativado */}
-      {showFgts && (
-        <div className="border-t border-gray-800 px-4 py-3 flex flex-col gap-3 lg:flex-row lg:items-end lg:gap-3 rounded-b-2xl">
-          <div className="lg:w-40">
-            <InputField
-              label="Depósito mensal FGTS"
-              tooltip="Quanto cai na sua conta do FGTS por mês. Geralmente 8% do salário bruto."
-              value={fmt(params.fgtsDeposito)}
-              onChange={(v) => updateParam('fgtsDeposito', v)}
-              prefix="R$"
-              placeholder="500"
-              monetary
-            />
-          </div>
-
-          <div className="lg:w-36">
-            <InputField
-              label="Usar a cada"
-              tooltip="Com que frequência usar o FGTS. Mínimo legal: 12 meses. Mais comum: 24 meses."
-              value={fmt(params.fgtsFrequencia)}
-              onChange={(v) => updateParam('fgtsFrequencia', v)}
-              suffix="meses"
-              placeholder="24"
-              min={12}
-              max={360}
-              step={12}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1 justify-end pb-0.5">
-            <p className="text-xs text-gray-500">
-              Acumulado por uso:{' '}
-              <span className="text-emerald-400 font-medium">
-                R$ {(params.fgtsDeposito * params.fgtsFrequencia).toLocaleString('pt-BR')}
-              </span>
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* FAB + modal da simulação Caixa — renderizado fora do layout de inputs */}
       <CaixaApiImport state={state} dispatch={dispatch} />

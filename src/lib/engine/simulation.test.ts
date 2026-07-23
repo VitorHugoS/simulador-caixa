@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { simularBaselines } from './simulation'
-import { DEFAULTS_SIMULAR } from './types'
+import { simularBaselines, simularPersonalizado } from './simulation'
+import { EventoAporte, DEFAULTS_SIMULAR, MesOutput } from './types'
 
 describe('Motor Matemático - simulation.ts', () => {
   describe('Baselines (Sem Aportes Extras)', () => {
@@ -38,6 +38,32 @@ describe('Motor Matemático - simulation.ts', () => {
       
       // Matemática corrigida: amortização no último mês mata o resíduo
       expect(ultimoMes.sdFim).toBe(0)
+    })
+  })
+
+  describe('Cenário Personalizado (Aportes Extras e Templates)', () => {
+    it('aplica corretamente eventos do tipo template sem falhar e reduzindo o prazo', () => {
+      const eventos: EventoAporte[] = [
+        {
+          id: 'template-13-salario',
+          mesInicio: 12,
+          frequencia: 12,
+          valor: 5000,
+          efeito: 'reduzir_prazo',
+          fgts: false,
+          geradoPor: 'template'
+        }
+      ]
+
+      const out = simularPersonalizado(DEFAULTS_SIMULAR, eventos)
+      
+      // O prazo real deve ser menor que 360 meses devido à injeção anual de R$ 5000
+      expect(out.prazoReal).toBeLessThan(360)
+
+      // Verifica se no mês 12 ocorreu o aporte extra
+      const mes12 = out.serie.find((m: MesOutput) => m.mes === 12)
+      expect(mes12).toBeDefined()
+      expect(mes12!.aporteExtra).toBe(5000)
     })
   })
 })

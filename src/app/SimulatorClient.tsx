@@ -54,6 +54,10 @@ export function SimulatorClient() {
     dispatch({ type: 'REMOVE_EVENTO', id })
   }
 
+  function upsertEvento(ev: EventoAporte) {
+    dispatch({ type: 'UPSERT_EVENTO', payload: ev })
+  }
+
   function saveRowEvento(mes: number, novos: EventoAporte[]) {
     dispatch({ type: 'SET_OVERRIDE', mes, payload: novos })
   }
@@ -108,6 +112,8 @@ export function SimulatorClient() {
           params={state.params}
           onRemoveGrupo={removeGrupo}
           onRemoveEvento={removeEvento}
+          onUpsertEvento={upsertEvento}
+          onUpdateParam={(k, v) => dispatch({ type: 'UPDATE_PARAM', key: k, value: v })}
           onAddClick={() => setModalOpen(true)}
           onSACTransformClick={() => setSacTransformOpen(true)}
           onClearAll={() => dispatch({ type: 'SET_EVENTOS', payload: [] })}
