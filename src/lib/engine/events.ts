@@ -1,4 +1,4 @@
-import { EventoAporte, Params } from './types'
+import { EventoAporte, Params, AportesPlanejadosMap, EfeitoAporte } from './types'
 import { taxaMensal, pmtPrice, amortSAC } from './math'
 
 function uid(): string {
@@ -58,4 +58,53 @@ export function eventosDoMes(eventos: EventoAporte[], mes: number): EventoAporte
     }
     return e.mesInicio === mes
   })
+}
+
+// Pré-processa todos os eventos num mapa mês a mês (AOT) resolvendo conflitos
+export function resolverAportes(
+  eventos: EventoAporte[],
+  params: Pick<Params, 'n' | 'fgtsFrequencia' | 'fgtsDeposito'>
+): AportesPlanejadosMap {
+  const planejados: AportesPlanejadosMap = {}
+
+  for (let m = 1; m <= params.n; m++) {
+    const eventosM = eventosDoMes(eventos, m)
+    const isAutoFgtsMonth =
+      params.fgtsDeposito > 0 &&
+      params.fgtsFrequencia > 0 &&
+      m % params.fgtsFrequencia === 0
+
+    if (eventosM.length === 0 && !isAutoFgtsMonth) {
+      continue
+    }
+
+    const overrideEv = eventosM.find((ev) => ev.geradoPor === 'override')
+    
+    let valorAcumulado = 0
+    let temReduzirPrazo = false
+    let temReduzirParcela = false
+
+    if (overrideEv) {
+      valorAcumulado = overrideEv.valor
+      if (overrideEv.efeito === 'reduzir_prazo') temReduzirPrazo = true
+      if (overrideEv.efeito === 'reduzir_parcela') temReduzirParcela = true
+    } else {
+      for (const ev of eventosM) {
+        valorAcumulado += ev.valor
+        if (ev.efeito === 'reduzir_prazo') temReduzirPrazo = true
+        if (ev.efeito === 'reduzir_parcela') temReduzirParcela = true
+      }
+      if (isAutoFgtsMonth) {
+        valorAcumulado += params.fgtsDeposito * params.fgtsFrequencia
+        temReduzirPrazo = true // FGTS amortizar_saldo reduz prazo
+      }
+    }
+
+    if (valorAcumulado > 0) {
+      const efeitoFinal: EfeitoAporte = temReduzirPrazo ? 'reduzir_prazo' : 'reduzir_parcela'
+      planejados[m] = { valorAcumulado, efeitoFinal }
+    }
+  }
+
+  return planejados
 }

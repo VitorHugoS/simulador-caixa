@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 import { XIcon } from '@/components/ui/icons'
 import { AppState, EventoAporte, EfeitoAporte } from '@/lib/engine/types'
 import { simular } from '@/lib/engine/simulation'
-import { gerarSACTransform } from '@/lib/engine/events'
+import { CenarioBuilder } from '@/lib/engine/builder'
 
 function moeda(n: number): string {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
@@ -18,9 +18,6 @@ function meses(n: number): string {
   return `${a}a ${m}m`
 }
 
-function uid(): string {
-  return Math.random().toString(36).slice(2, 10)
-}
 
 interface Props {
   state: AppState
@@ -57,19 +54,20 @@ export function AmortizationModal({ state, onApply, onClose, isSACTransform = fa
     }
   }
 
-  const novosEventos: EventoAporte[] = isSACTransform
-    ? gerarSACTransform(state.params)
-    : [{
-        id: uid(),
-        mesInicio: parseInt(mesInicio) || 1,
-        mesFim: mesFim ? parseInt(mesFim) : undefined,
-        frequencia: parseInt(frequencia) || 1,
-        valor: parseFloat(valor) || 0,
-        efeito,
-        fgts,
-        geradoPor: 'lote' as const,
-        grupoId: uid(),
-      }]
+  let builder = new CenarioBuilder(state.params)
+  if (isSACTransform) {
+    builder.comSACTransform()
+  } else {
+    builder.comAporte({
+      mesInicio: parseInt(mesInicio) || 1,
+      mesFim: mesFim ? parseInt(mesFim) : undefined,
+      frequencia: parseInt(frequencia) || 1,
+      valor: parseFloat(valor) || 0,
+      efeito,
+      fgts
+    })
+  }
+  const novosEventos: EventoAporte[] = builder.build()
 
   const antes = simular(state.params, state.eventos)
   const depois = simular(state.params, [...state.eventos, ...novosEventos])

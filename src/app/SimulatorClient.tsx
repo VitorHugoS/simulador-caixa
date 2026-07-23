@@ -16,7 +16,7 @@ import { AmortTable } from '@/components/table/AmortTable'
 import { RowDetailModal } from '@/components/table/RowDetailModal'
 
 export function SimulatorClient() {
-  const { state, setState, hasUrlState } = useUrlState()
+  const { state, dispatch, hasUrlState } = useUrlState()
   const result = useSimulator(state)
   const [modalOpen, setModalOpen] = useState(false)
   const [sacTransformOpen, setSacTransformOpen] = useState(false)
@@ -34,7 +34,7 @@ export function SimulatorClient() {
     return (
       <CaixaOnboarding
         onComplete={(params) => {
-          setState((prev) => ({ ...prev, params: { ...prev.params, ...params } }))
+          dispatch({ type: 'UPDATE_PARAMS', payload: params })
           setOnboarded(true)
         }}
         onSkip={() => setOnboarded(true)}
@@ -43,31 +43,19 @@ export function SimulatorClient() {
   }
 
   function applyEventos(novos: EventoAporte[]) {
-    setState((prev) => ({ ...prev, eventos: [...prev.eventos, ...novos] }))
+    dispatch({ type: 'ADD_EVENTOS', payload: novos })
   }
 
   function removeGrupo(grupoId: string) {
-    setState((prev) => ({
-      ...prev,
-      eventos: prev.eventos.filter((e) => e.grupoId !== grupoId),
-    }))
+    dispatch({ type: 'REMOVE_GRUPO', grupoId })
   }
 
   function removeEvento(id: string) {
-    setState((prev) => ({
-      ...prev,
-      eventos: prev.eventos.filter((e) => e.id !== id),
-    }))
+    dispatch({ type: 'REMOVE_EVENTO', id })
   }
 
   function saveRowEvento(mes: number, novos: EventoAporte[]) {
-    setState((prev) => ({
-      ...prev,
-      eventos: [
-        ...prev.eventos.filter((e) => !(e.mesInicio === mes && e.geradoPor === 'override')),
-        ...novos,
-      ],
-    }))
+    dispatch({ type: 'SET_OVERRIDE', mes, payload: novos })
   }
 
   function copyLink() {
@@ -98,7 +86,7 @@ export function SimulatorClient() {
       <div className="max-w-6xl mx-auto px-4 py-5 flex flex-col gap-5">
         <InputPanel
           state={state}
-          onChange={setState}
+          dispatch={dispatch}
         />
         <KPICards
           result={result}
@@ -122,7 +110,7 @@ export function SimulatorClient() {
           onRemoveEvento={removeEvento}
           onAddClick={() => setModalOpen(true)}
           onSACTransformClick={() => setSacTransformOpen(true)}
-          onClearAll={() => setState((prev) => ({ ...prev, eventos: [] }))}
+          onClearAll={() => dispatch({ type: 'SET_EVENTOS', payload: [] })}
           sistemaProposta={state.params.sistema}
         />
 

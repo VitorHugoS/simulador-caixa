@@ -5,45 +5,47 @@ import { AppState, Params, Sistema } from '@/lib/engine/types'
 import { InputField } from './InputField'
 import { CaixaApiImport } from './CaixaApiImport'
 
+import { AppAction } from '../engine/state'
+
 interface Props {
   state: AppState
-  onChange: (next: AppState) => void
+  dispatch: (action: AppAction) => void
 }
 
 function fmt(n: number): string { return String(n) }
 function pct(n: number): string { return String((n * 100).toFixed(4)) }
 function mipPct(n: number): string { return String((n * 100).toFixed(5)) }
 
-export function InputPanel({ state, onChange }: Props) {
+export function InputPanel({ state, dispatch }: Props) {
   const { params } = state
   const [showFgts, setShowFgts] = useState(params.fgtsDeposito > 0)
 
   function updateParam(key: keyof Params, raw: string) {
     const value = raw === '' ? 0 : parseFloat(raw)
     if (isNaN(value)) return
-    onChange({ ...state, params: { ...params, [key]: value } })
+    dispatch({ type: 'UPDATE_PARAM', key, value })
   }
 
   function updateIAnual(raw: string) {
     const value = raw === '' ? 0 : parseFloat(raw)
     if (isNaN(value)) return
-    onChange({ ...state, params: { ...params, iAnual: value / 100 } })
+    dispatch({ type: 'UPDATE_PARAM', key: 'iAnual', value: value / 100 })
   }
 
   function updateTrAnual(raw: string) {
     const value = raw === '' ? 0 : parseFloat(raw)
     if (isNaN(value)) return
-    onChange({ ...state, params: { ...params, trAnual: value / 100 } })
+    dispatch({ type: 'UPDATE_PARAM', key: 'trAnual', value: value / 100 })
   }
 
   function updateMipRate(raw: string) {
     const value = raw === '' ? 0 : parseFloat(raw)
     if (isNaN(value)) return
-    onChange({ ...state, params: { ...params, mipRate: value / 100 } })
+    dispatch({ type: 'UPDATE_PARAM', key: 'mipRate', value: value / 100 })
   }
 
   function updateSistema(sistema: Sistema) {
-    onChange({ ...state, params: { ...params, sistema } })
+    dispatch({ type: 'UPDATE_PARAM', key: 'sistema', value: sistema })
   }
 
   return (
@@ -160,11 +162,11 @@ export function InputPanel({ state, onChange }: Props) {
                 onClick={() => {
                   if (showFgts) {
                     setShowFgts(false)
-                    onChange({ ...state, params: { ...params, fgtsDeposito: 0 } })
+                    dispatch({ type: 'UPDATE_PARAM', key: 'fgtsDeposito', value: 0 })
                   } else {
                     setShowFgts(true)
                     if (params.fgtsDeposito === 0) {
-                      onChange({ ...state, params: { ...params, fgtsDeposito: 500 } })
+                      dispatch({ type: 'UPDATE_PARAM', key: 'fgtsDeposito', value: 500 })
                     }
                   }
                 }}
@@ -230,7 +232,7 @@ export function InputPanel({ state, onChange }: Props) {
       )}
 
       {/* FAB + modal da simulação Caixa — renderizado fora do layout de inputs */}
-      <CaixaApiImport state={state} onChange={onChange} />
+      <CaixaApiImport state={state} dispatch={dispatch} />
     </div>
   )
 }

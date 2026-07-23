@@ -1,12 +1,12 @@
-import { Params, EventoAporte, MesData, SimOutput, SimResult } from './types'
+import { Params, EventoAporte, MesData, SimOutput, SimResult, AportesPlanejadosMap } from './types'
 import { taxaMensal, pmtPrice, amortSAC, recalcPMT } from './math'
-import { eventosDoMes } from './events'
+import { resolverAportes } from './events'
 
 function r2(n: number): number {
   return Math.round(n * 100) / 100
 }
 
-function simularSerie(params: Params, eventos: EventoAporte[]): SimOutput {
+function simularSerie(params: Params, aportesPlanejados: AportesPlanejadosMap): SimOutput {
   const i = taxaMensal(params.iAnual)
   const trMensal = params.trAnual > 0 ? Math.pow(1 + params.trAnual, 1 / 12) - 1 : 0
   const serie: MesData[] = []
@@ -36,27 +36,15 @@ function simularSerie(params: Params, eventos: EventoAporte[]): SimOutput {
         ? amortSacMutavel
         : r2(pmt - juros)
 
-    const eventosM = eventosDoMes(eventos, m)
-    const isAutoFgtsMonth =
-      params.fgtsDeposito > 0 &&
-      params.fgtsFrequencia > 0 &&
-      m % params.fgtsFrequencia === 0
+    const aporte = aportesPlanejados[m]
     let aporteExtra = 0
-    const overrideEv = eventosM.find((ev) => ev.geradoPor === 'override')
-    if (overrideEv) {
-      aporteExtra = overrideEv.valor
-    } else {
-      for (const ev of eventosM) {
-        aporteExtra += ev.valor
-      }
-      if (isAutoFgtsMonth) {
-        aporteExtra += params.fgtsDeposito * params.fgtsFrequencia
-      }
-    }
+    let efeito = null
 
-    // Cap aporteExtra to remaining saldo after ordinary amortization
-    const aporteExtraMax = r2(Math.max(0, sdInicio - amortOrdBase))
-    aporteExtra = r2(Math.min(aporteExtra, aporteExtraMax))
+    if (aporte) {
+      const aporteExtraMax = r2(Math.max(0, sdInicio - amortOrdBase))
+      aporteExtra = r2(Math.min(aporte.valorAcumulado, aporteExtraMax))
+      efeito = aporte.efeitoFinal
+    }
 
     const amortTotal = r2(amortOrdBase + aporteExtra)
     const sdFim = r2(Math.max(0, sdInicio - amortTotal))
@@ -77,22 +65,20 @@ function simularSerie(params: Params, eventos: EventoAporte[]): SimOutput {
       taxas: taxasTotal,
       parcela: r2(parcelaBase + taxasTotal),
       sdFim,
-      temEvento: eventosM.length > 0 || isAutoFgtsMonth,
+      temEvento: !!aporte,
     })
 
     totalJuros += juros
     totalPago += parcelaBase + taxasTotal + aporteExtra
 
     // Recalcular amortização se efeito for reduzir_parcela
-    for (const ev of eventosM) {
-      if (ev.efeito === 'reduzir_parcela') {
-        const mesesRestantes = params.n - m
-        if (mesesRestantes > 0) {
-          if (params.sistema === 'price') {
-            pmt = recalcPMT(sdFim, mesesRestantes, i)
-          } else {
-            amortSacMutavel = r2(sdFim / mesesRestantes)
-          }
+    if (efeito === 'reduzir_parcela') {
+      const mesesRestantes = params.n - m
+      if (mesesRestantes > 0) {
+        if (params.sistema === 'price') {
+          pmt = recalcPMT(sdFim, mesesRestantes, i)
+        } else {
+          amortSacMutavel = r2(sdFim / mesesRestantes)
         }
       }
     }
@@ -111,13 +97,14 @@ function simularSerie(params: Params, eventos: EventoAporte[]): SimOutput {
 export function simularBaselines(params: Params): { pricePura: SimOutput; sacPura: SimOutput } {
   const baseline: Params = { ...params, fgtsDeposito: 0 }
   return {
-    pricePura: simularSerie({ ...baseline, sistema: 'price' }, []),
-    sacPura: simularSerie({ ...baseline, sistema: 'sac' }, []),
+    pricePura: simularSerie({ ...baseline, sistema: 'price' }, {}),
+    sacPura: simularSerie({ ...baseline, sistema: 'sac' }, {}),
   }
 }
 
 export function simularPersonalizado(params: Params, eventos: EventoAporte[]): SimOutput {
-  return simularSerie(params, eventos)
+  const planejados = resolverAportes(eventos, params)
+  return simularSerie(params, planejados)
 }
 
 export function simular(params: Params, eventos: EventoAporte[]): SimResult {

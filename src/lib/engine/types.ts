@@ -26,6 +26,13 @@ export interface EventoAporte {
   grupoId?: string
 }
 
+export type AportePlanejado = {
+  valorAcumulado: number
+  efeitoFinal: EfeitoAporte
+}
+
+export type AportesPlanejadosMap = Record<number, AportePlanejado>
+
 export interface MesData {
   mes: number
   sdInicio: number

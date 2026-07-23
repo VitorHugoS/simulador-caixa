@@ -1,9 +1,10 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useEffect, useRef, useReducer, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { AppState, EventoAporte, DEFAULTS_SIMULAR } from '../engine/types'
 import { encodeState, decodeParams } from '../engine/url'
+import { appReducer } from '../engine/state'
 
 const SESSION_KEY = 'finansim_eventos'
 
@@ -30,32 +31,30 @@ export function useUrlState() {
 
   const hasUrlState = searchParams.toString() !== ''
 
-  const [state, setStateInternal] = useState<AppState>(() => {
+  // Run initializer only once
+  const [initialState] = useState<AppState>(() => {
     const search = searchParams.toString()
     if (!search) {
-      return { modo: 'simular', params: DEFAULTS_SIMULAR, eventos: [] }
+      return { modo: 'simular', params: DEFAULTS_SIMULAR, eventos: loadEventos() }
     }
     const { modo, params } = decodeParams(search)
     return { modo, params, eventos: loadEventos() }
   })
 
-  const setState = useCallback((next: AppState | ((prev: AppState) => AppState)) => {
-    setStateInternal((prev) => {
-      const updated = typeof next === 'function' ? next(prev) : next
+  const [state, dispatch] = useReducer(appReducer, initialState)
 
-      // Persist events to localStorage immediately
-      saveEventos(updated.eventos)
+  // Infrastructure side-effects (Adapter)
+  useEffect(() => {
+    saveEventos(state.eventos)
+  }, [state.eventos])
 
-      // Debounce URL update (params only)
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-      debounceRef.current = setTimeout(() => {
-        const encoded = encodeState(updated)
-        router.replace(`${pathname}?${encoded}`, { scroll: false })
-      }, 300)
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      const encoded = encodeState(state)
+      router.replace(`${pathname}?${encoded}`, { scroll: false })
+    }, 300)
+  }, [state.params, state.modo, pathname, router])
 
-      return updated
-    })
-  }, [router, pathname])
-
-  return { state, setState, hasUrlState }
+  return { state, dispatch, hasUrlState }
 }

@@ -11,14 +11,16 @@ import { InputField } from './InputField'
 
 const CACHE_KEY = 'caixa_perfil'
 
+import { AppAction } from '@/lib/engine/state'
+
 interface Props {
   state: AppState
-  onChange: (next: AppState) => void
+  dispatch: (action: AppAction) => void
 }
 
 type Etapa = 'form' | 'produtos' | 'preview'
 
-export function CaixaApiImport({ state, onChange }: Props) {
+export function CaixaApiImport({ state, dispatch }: Props) {
   const [open, setOpen] = useState(false)
   const [etapa, setEtapa] = useState<Etapa>('form')
   const [loading, setLoading] = useState(false)
@@ -260,7 +262,7 @@ export function CaixaApiImport({ state, onChange }: Props) {
 
   function handleApply() {
     if (!extracted) return
-    onChange({ ...state, params: { ...state.params, ...extracted.params } })
+    dispatch({ type: 'UPDATE_PARAMS', payload: extracted.params })
     handleClose()
   }
 
