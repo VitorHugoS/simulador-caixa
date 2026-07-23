@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { EventoAporte, Params } from '@/lib/engine/types'
 import { InputField } from '@/components/inputs/InputField'
 
