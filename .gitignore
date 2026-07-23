@@ -44,3 +44,8 @@ next-env.d.ts
 IMPLEMENTATION_PLAN.md
 task.md
 *.pdf
+
+# agent / rtk config
+.rtk/
+.agents/
+CLAUDE.md
