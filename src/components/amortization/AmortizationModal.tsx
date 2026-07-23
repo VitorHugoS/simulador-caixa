@@ -54,7 +54,7 @@ export function AmortizationModal({ state, onApply, onClose, isSACTransform = fa
     }
   }
 
-  let builder = new CenarioBuilder(state.params)
+  const builder = new CenarioBuilder(state.params)
   if (isSACTransform) {
     builder.comSACTransform()
   } else {

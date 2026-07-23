@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
@@ -20,15 +21,19 @@
     "recharts": "^3.8.1"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.6",
+    "@next/eslint-plugin-next": "^16.2.11",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^9.39.5",
-    "eslint-config-next": "^16.2.11",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "tailwindcss": "^4",
     "typescript": "^5",
+    "typescript-eslint": "^8.65.0",
     "vitest": "^4.1.10"
   }
 }

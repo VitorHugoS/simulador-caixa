@@ -82,17 +82,14 @@ export function resolverAportes(
     
     let valorAcumulado = 0
     let temReduzirPrazo = false
-    let temReduzirParcela = false
 
     if (overrideEv) {
       valorAcumulado = overrideEv.valor
       if (overrideEv.efeito === 'reduzir_prazo') temReduzirPrazo = true
-      if (overrideEv.efeito === 'reduzir_parcela') temReduzirParcela = true
     } else {
       for (const ev of eventosM) {
         valorAcumulado += ev.valor
         if (ev.efeito === 'reduzir_prazo') temReduzirPrazo = true
-        if (ev.efeito === 'reduzir_parcela') temReduzirParcela = true
       }
       if (isAutoFgtsMonth) {
         valorAcumulado += params.fgtsDeposito * params.fgtsFrequencia

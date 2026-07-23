@@ -18,11 +18,7 @@ interface Props {
   monetary?: boolean
 }
 
-function formatMonetary(raw: string): string {
-  const digits = raw.replace(/\D/g, '')
-  if (!digits) return ''
-  return parseInt(digits, 10).toLocaleString('pt-BR', { maximumFractionDigits: 0 })
-}
+
 
 function monetaryFromNumber(n: number): string {
   if (!n) return ''
@@ -40,7 +36,6 @@ export function InputField({
   placeholder,
   min,
   max,
-  step,
   monetary = false,
 }: Props) {
   const [showTooltip, setShowTooltip] = useState(false)

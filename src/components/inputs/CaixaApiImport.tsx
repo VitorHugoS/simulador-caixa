@@ -92,7 +92,6 @@ export function CaixaApiImport({ state, dispatch }: Props) {
         if (p.dataNascimento) setDataNascimento(p.dataNascimento)
         if (p.ufSgUf) {
           loadFromCache({ ufSgUf: p.ufSgUf, municipioCodigo: p.municipioCodigo, municipioNome: p.municipioNome })
-        } else {
         }
       }
     } catch { /* ignore */ }
