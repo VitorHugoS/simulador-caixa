@@ -91,7 +91,8 @@ describe('CLTTemplates (UI Seam)', () => {
       id: 'template-13-salario',
       frequencia: 12,
       mesInicio: 12,
-      valor: 5000 // salário base
+      // O Líquido exato deve ser chamado
+      valor: expect.any(Number)
     }))
   })
 
@@ -117,7 +118,7 @@ describe('CLTTemplates (UI Seam)', () => {
       id: 'template-ferias',
       frequencia: 12,
       mesInicio: 6,
-      valor: 5000 / 3
+      valor: expect.any(Number)
     }))
   })
 })

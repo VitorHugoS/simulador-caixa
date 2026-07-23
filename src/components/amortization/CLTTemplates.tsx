@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { EventoAporte, Params } from '@/lib/engine/types'
 import { InputField } from '@/components/inputs/InputField'
+import { calcularSalarioLiquido } from '@/lib/engine/calculadora-fiscal'
+
+const ID_13 = 'template-13-salario'
+const ID_FERIAS = 'template-ferias'
 
 interface Props {
   eventos: EventoAporte[]
@@ -12,8 +16,8 @@ interface Props {
 
 export function CLTTemplates({ eventos, params, onUpsert, onRemove, onUpdateParam }: Props) {
   const [salario, setSalario] = useState('5000')
-  const active13 = eventos.some((e) => e.id === 'template-13-salario')
-  const activeFerias = eventos.some((e) => e.id === 'template-ferias')
+  const active13 = eventos.some((e) => e.id === ID_13)
+  const activeFerias = eventos.some((e) => e.id === ID_FERIAS)
   const activeFgts = params.fgtsDeposito > 0
 
   const salarioNum = parseFloat(salario) || 0
@@ -25,17 +29,18 @@ export function CLTTemplates({ eventos, params, onUpsert, onRemove, onUpdatePara
     if (valor <= 0) return
 
     if (active13) {
-      const ev = eventos.find((e) => e.id === 'template-13-salario')
-      if (ev && ev.valor !== valor) {
-        onUpsert({ ...ev, valor })
+      const ev = eventos.find((e) => e.id === ID_13)
+      const valorLiquido = calcularSalarioLiquido(valor)
+      if (ev && ev.valor !== valorLiquido) {
+        onUpsert({ ...ev, valor: valorLiquido })
       }
     }
 
     if (activeFerias) {
-      const ev = eventos.find((e) => e.id === 'template-ferias')
-      const valorFerias = valor / 3
-      if (ev && Math.abs(ev.valor - valorFerias) > 0.01) {
-        onUpsert({ ...ev, valor: valorFerias })
+      const ev = eventos.find((e) => e.id === ID_FERIAS)
+      const valorLiquidoFerias = calcularSalarioLiquido(valor) / 3
+      if (ev && Math.abs(ev.valor - valorLiquidoFerias) > 0.01) {
+        onUpsert({ ...ev, valor: valorLiquidoFerias })
       }
     }
 
@@ -64,8 +69,8 @@ export function CLTTemplates({ eventos, params, onUpsert, onRemove, onUpdatePara
     }
   }
 
-  const toggle13 = () => toggleTemplate('template-13-salario', active13, 12, s => s)
-  const toggleFerias = () => toggleTemplate('template-ferias', activeFerias, 6, s => s / 3)
+  const toggle13 = () => toggleTemplate(ID_13, active13, 12, s => calcularSalarioLiquido(s))
+  const toggleFerias = () => toggleTemplate(ID_FERIAS, activeFerias, 6, s => calcularSalarioLiquido(s) / 3)
 
   function toggleFgts() {
     if (activeFgts) {
@@ -154,6 +159,29 @@ export function CLTTemplates({ eventos, params, onUpsert, onRemove, onUpdatePara
           monetary
         />
       </div>
+
+      {(active13 || activeFerias) && (
+        <div className="pt-2 border-t border-blue-900/30 animate-fade-in flex flex-col sm:flex-row gap-3">
+          {[
+            { id: ID_13, active: active13, label: 'Valor do 13º (Líquido Estimado)', tooltip: 'Calculado usando IR e INSS. Você pode ajustar com o valor exato do seu holerite.' },
+            { id: ID_FERIAS, active: activeFerias, label: 'Valor das Férias (1/3 Líquido Estimado)', tooltip: 'Estimativa de um terço do seu salário líquido. Ajuste se necessário.' }
+          ].filter(i => i.active).map(item => (
+            <div key={item.id} className="flex-1">
+              <InputField
+                label={item.label}
+                tooltip={item.tooltip}
+                value={String(eventos.find(e => e.id === item.id)?.valor || 0)}
+                onChange={(v) => {
+                  const ev = eventos.find(e => e.id === item.id)
+                  if (ev) onUpsert({ ...ev, valor: parseFloat(v) || 0 })
+                }}
+                prefix="R$"
+                monetary
+              />
+            </div>
+          ))}
+        </div>
+      )}
 
       {activeFgts && (
         <div className="pt-2 border-t border-emerald-900/30 animate-fade-in flex flex-col sm:flex-row gap-3">
