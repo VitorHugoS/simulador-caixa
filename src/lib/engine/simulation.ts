@@ -31,10 +31,15 @@ function simularSerie(params: Params, aportesPlanejados: AportesPlanejadosMap): 
 
     const sdInicio = r2(sd)
     const juros = r2(sdInicio * i)
-    const amortOrdBase =
+    let amortOrdBase =
       params.sistema === 'sac'
         ? amortSacMutavel
         : r2(pmt - juros)
+
+    // Ajuste final: liquidar resíduos no último mês ou se a amortização engolir o saldo
+    if (m === params.n || amortOrdBase > sdInicio) {
+      amortOrdBase = sdInicio
+    }
 
     const aporte = aportesPlanejados[m]
     let aporteExtra = 0
