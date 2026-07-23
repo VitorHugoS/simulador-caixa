@@ -5,7 +5,7 @@ import { AppState, Params, Sistema } from '@/lib/engine/types'
 import { InputField } from './InputField'
 import { CaixaApiImport } from './CaixaApiImport'
 
-import { AppAction } from '../engine/state'
+import { AppAction } from '@/lib/engine/state'
 
 interface Props {
   state: AppState
