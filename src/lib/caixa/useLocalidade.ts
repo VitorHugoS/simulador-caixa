@@ -38,10 +38,13 @@ export function useLocalidade() {
   }, [selectedUF])
 
   useEffect(() => {
-    if (!pendingUFSg || ufs.length === 0 || selectedUF) return
+    if (!pendingUFSg || ufs.length === 0) return
     const uf = ufs.find((u) => u.sgUf === pendingUFSg)
-    if (uf) setSelectedUFState(uf)
-  }, [pendingUFSg, ufs, selectedUF])
+    if (uf) {
+      setSelectedUFState(uf)
+      setPendingUFSg(null)
+    }
+  }, [pendingUFSg, ufs])
 
   // Restore by codigo (from cache — exact match)
   useEffect(() => {
@@ -55,14 +58,15 @@ export function useLocalidade() {
 
   // Restore by name (from geolocation)
   useEffect(() => {
-    if (!pendingCity || municipios.length === 0 || selectedMunicipio) return
+    if (!pendingCity || municipios.length === 0) return
     const target = norm(pendingCity)
     const match = municipios.find((m) => norm(m.nome) === target)
     if (match) {
       setSelectedMunicipio(match)
+      setMunicipioSearch('')
       setPendingCity(null)
     }
-  }, [pendingCity, municipios, selectedMunicipio])
+  }, [pendingCity, municipios])
 
   async function tryAutoGeo() {
     if (!navigator?.geolocation || geoStatus !== 'idle') return
@@ -76,7 +80,7 @@ export function useLocalidade() {
   }
 
   function requestGeo() {
-    if (!navigator?.geolocation || geoStatus !== 'idle') return
+    if (!navigator?.geolocation || geoStatus === 'detecting') return
     if (!window.isSecureContext) return
     setGeoStatus('detecting')
     navigator.geolocation.getCurrentPosition(
