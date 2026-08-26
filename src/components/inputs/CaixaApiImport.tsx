@@ -418,8 +418,32 @@ export function CaixaApiImport({ state, dispatch }: Props) {
 
                 {formStep === 1 && (
                   <div className="flex flex-col gap-3 mb-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                    <InputField label="Renda bruta familiar mensal" value={renda} onChange={setRenda} prefix="R$" placeholder="9.000" monetary />
-                    <InputField label="Valor aproximado do imóvel" value={valorImovel} onChange={setValorImovel} prefix="R$" placeholder="260.000" monetary />
+                    <InputField 
+                      label="Renda bruta familiar mensal" 
+                      value={renda} 
+                      onChange={setRenda} 
+                      prefix="R$" 
+                      placeholder="9.000" 
+                      monetary 
+                      hintText={
+                        renda && parseFloat(renda) > 0 
+                          ? <span className="text-green-500/80">Comprometimento de 30%: parcela máxima de R$ {(parseFloat(renda) * 0.3).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>
+                          : 'A parcela não pode ultrapassar 30% da sua renda'
+                      }
+                    />
+                    <InputField 
+                      label="Valor aproximado do imóvel" 
+                      value={valorImovel} 
+                      onChange={setValorImovel} 
+                      prefix="R$" 
+                      placeholder="260.000" 
+                      monetary 
+                      hintText={
+                        valorImovel && parseFloat(valorImovel) > 0
+                          ? `Entrada mínima sugerida: R$ ${(parseFloat(valorImovel) * (sistema === 'sac' ? 0.2 : 0.3)).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} (${sistema.toUpperCase()})`
+                          : 'A Caixa financia até 80% (SAC) ou 70% (Price) do imóvel'
+                      }
+                    />
                     <InputField label="Valor de entrada" value={valorEntrada} onChange={(v) => { setEntradaTocada(true); setValorEntrada(v) }} prefix="R$" placeholder="80.000" monetary />
 
                     <div className="grid grid-cols-2 gap-3">
