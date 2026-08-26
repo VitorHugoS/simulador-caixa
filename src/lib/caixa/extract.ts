@@ -79,6 +79,11 @@ export function extractFromSimulacao(data: CaixaSimulacaoData, sistema: Sistema)
     } else {
       result.warnings.push('Taxa DFI/administração não encontrada')
     }
+
+    const primeira = parseAPI(p1.valorEncargo) || parseAPI(data.seguradoras?.seguradora?.[0]?.valorPrimeiraPrestacao)
+    if (primeira > 0) {
+      result.raw.primeiraParcela = primeira
+    }
   } else {
     result.warnings.push('Plano de pagamento ausente — MIP e DFI não extraídos')
   }

@@ -73,6 +73,7 @@ export interface CaixaExtracted {
     sistema?: string
     mipRate?: string
     taxasFixas?: string
+    primeiraParcela?: number
   }
   warnings: string[]
 }

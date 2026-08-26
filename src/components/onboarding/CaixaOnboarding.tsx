@@ -197,6 +197,7 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
 
   async function handleSimular(produtoInicial: CaixaProduto) {
     if (isRunningRef.current) return
+    setEtapa('preview')
     const cache = inputCacheRef.current
     if (!cache || !selectedUF || !selectedMunicipio) return
     const { rendaNum, valorImovelNum, valorEntradaNum, prazoNum, dataNascimentoAPI } = cache
@@ -458,7 +459,7 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
                 </div>
               )}
 
-              {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
+              {error && <p className="text-xs text-red-400 mb-3 text-center">{error}</p>}
 
               {formStep === 1 ? (
                 <button onClick={handleNextStep} className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-all cursor-pointer">
@@ -470,7 +471,7 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
                     Voltar
                   </button>
                   <button onClick={handleBuscar} disabled={loading || rateLimitSecondsLeft > 0} className="py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold transition-all cursor-pointer">
-                    {loading ? 'Buscando…' : rateLimitSecondsLeft > 0 ? `Aguarde ${rateLimitSecondsLeft}s` : 'Buscar simulação'}
+                    {rateLimitSecondsLeft > 0 ? `Aguarde ${rateLimitSecondsLeft}s` : 'Buscar simulação'}
                   </button>
                 </div>
               )}
@@ -478,82 +479,115 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
           )}
 
           {/* ── Etapa: seleção de enquadramento ── */}
-          {etapa === 'produtos' && (
-            <div className="flex flex-col gap-3">
-              <div className="mb-1">
-                <h2 className="text-white font-semibold text-lg">Escolha o enquadramento</h2>
-                <p className="text-xs text-gray-500 mt-0.5">{produtos.length} produto{produtos.length > 1 ? 's' : ''} disponível{produtos.length > 1 ? 'is' : ''} para o seu perfil</p>
+          {etapa === 'produtos' && !loading && (
+            <div className="animate-in fade-in zoom-in-95 duration-300">
+              <div className="mb-5">
+                <h2 className="text-white font-semibold text-lg">Enquadramentos</h2>
+                <p className="text-xs text-gray-500 mt-0.5">Escolha o produto da Caixa para importar</p>
               </div>
-
-              {produtos.map((p) => {
-                const nome = p.nomeProduto ?? p.nome ?? p.descricao ?? `Produto ${p.codigo}`
-                const isSelected = selectedProduto?.codigo === p.codigo
-                return (
-                  <button key={p.codigo} onClick={() => setSelectedProduto(p)} className={`w-full text-left flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl border transition-all cursor-pointer ${isSelected ? 'border-blue-500 bg-blue-600/10' : 'border-gray-700 bg-gray-800/60 hover:border-gray-500'}`}>
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-600'}`} />
-                      <p className={`text-sm font-medium truncate ${isSelected ? 'text-white' : 'text-gray-300'}`}>{nome}</p>
-                    </div>
-                    <ChevronRightIcon className={`w-4 h-4 flex-shrink-0 transition-colors ${isSelected ? 'text-blue-400' : 'text-gray-600'}`} />
+              <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1">
+                {produtos.map((p) => (
+                  <button
+                    key={p.codigo}
+                    onClick={() => handleSimular(p)}
+                    className="flex flex-col items-start bg-gray-800/50 hover:bg-gray-800 border border-gray-700/50 rounded-xl p-3 text-left transition-colors cursor-pointer"
+                  >
+                    <span className="text-sm font-medium text-white">{p.nomeProduto ?? p.nome ?? p.descricao}</span>
+                    <span className="text-xs text-gray-500 mt-1">Cód: {p.codigo}</span>
                   </button>
-                )
-              })}
-
-              {error && <p className="text-xs text-red-400">{error}</p>}
-
-              <div className="grid grid-cols-2 gap-3 mt-1">
-                <button onClick={() => { setEtapa('form'); setError(null) }} className="py-3 rounded-xl border border-gray-700 text-gray-400 text-sm font-medium hover:border-gray-500 transition-all cursor-pointer">
-                  Voltar
-                </button>
-                <button onClick={() => selectedProduto && handleSimular(selectedProduto)} disabled={!selectedProduto || loading} className="py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold transition-all cursor-pointer">
-                  {loading ? 'Simulando…' : 'Simular'}
+                ))}
+              </div>
+              <div className="mt-4 pt-4 border-t border-gray-800">
+                <button onClick={() => setEtapa('form')} className="w-full py-3 rounded-xl border border-gray-700 text-gray-400 text-sm font-medium hover:border-gray-500 transition-all cursor-pointer">
+                  Voltar e alterar dados
                 </button>
               </div>
             </div>
           )}
 
-          {/* ── Etapa: preview ── */}
-          {etapa === 'preview' && extracted && (
-            <>
+          {/* ── Etapa: preview ou loading ── */}
+          {(etapa === 'preview' || loading) && (
+            <div className="animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="mb-5">
-                <h2 className="text-white font-semibold text-lg">Resultado da simulação</h2>
-                <p className="text-xs text-gray-500 mt-0.5">Revise os valores antes de aplicar</p>
+                <h2 className="text-white font-semibold text-lg">{loading ? 'Buscando melhor opção...' : 'Resultado da simulação'}</h2>
+                <p className="text-xs text-gray-500 mt-0.5">{loading ? 'Conectando com a Caixa Econômica' : 'Revise os valores antes de aplicar'}</p>
               </div>
 
-              <div className="flex flex-col gap-2 mb-4">
-                {rows.map(({ label, value }) => (
-                  <div key={label} className="flex items-center justify-between py-2 border-b border-gray-800">
-                    <span className="text-xs text-gray-400">{label}</span>
-                    {value ? <span className="text-sm font-medium text-white">{value}</span> : <span className="text-xs text-gray-600 italic">não encontrado</span>}
+              {loading ? (
+                <div className="flex flex-col gap-3 mb-6">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex items-center justify-between py-2 border-b border-gray-800/50">
+                      <div className="h-3 bg-gray-800 rounded-full w-24 animate-pulse"></div>
+                      <div className="h-4 bg-gray-800 rounded-full w-20 animate-pulse"></div>
+                    </div>
+                  ))}
+                  <div className="h-16 bg-gray-800/50 rounded-xl w-full mt-2 animate-pulse"></div>
+                </div>
+              ) : extracted && (
+                <>
+                  <div className="flex flex-col gap-2 mb-4">
+                    {rows.map(({ label, value }) => (
+                      <div key={label} className="flex items-center justify-between py-2 border-b border-gray-800">
+                        <span className="text-xs text-gray-400">{label}</span>
+                        {value ? <span className="text-sm font-medium text-white">{value}</span> : <span className="text-xs text-gray-600 italic">não encontrado</span>}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
 
-              {entradaAjustada && (
-                <div className="bg-orange-900/20 border border-orange-700/40 rounded-xl px-3 py-3 mb-4">
-                  <p className="text-xs text-orange-400 font-semibold mb-1">Entrada ajustada pela Caixa</p>
-                  <p className="text-xs text-orange-300">
-                    Sua entrada de <span className="font-medium">R$ {entradaAjustada.solicitada.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span> foi ajustada para <span className="font-medium">R$ {entradaAjustada.ajustada.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>. Com sua renda, o máximo financiável é <span className="font-medium">R$ {entradaAjustada.valorFinanciamento.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span> (parcela limitada a 30% da renda mensal).
-                  </p>
-                </div>
+                  {extracted.raw.primeiraParcela && inputCacheRef.current && (
+                    <div className="mb-5">
+                      <div className="flex justify-between items-end mb-2">
+                        <span className="text-xs text-gray-400 font-medium">Saúde da Aprovação</span>
+                        <span className="text-xs font-semibold text-white">R$ {extracted.raw.primeiraParcela.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} <span className="text-gray-500 font-normal">/ 1ª parcela</span></span>
+                      </div>
+                      <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden flex relative">
+                        {(() => {
+                          const pct = Math.min(100, Math.max(0, (extracted.raw.primeiraParcela / (inputCacheRef.current.rendaNum * 0.3)) * 100))
+                          let cor = 'bg-green-500'
+                          let text = 'Muito provável de aprovar'
+                          if (pct > 80) { cor = 'bg-yellow-500'; text = 'Próximo do limite da renda' }
+                          if (pct >= 100) { cor = 'bg-red-500'; text = 'Risco de não aprovação (passa de 30%)' }
+                          return (
+                            <>
+                              <div className={`h-full ${cor} transition-all duration-1000 ease-out`} style={{ width: `${pct}%` }}></div>
+                              <div className="absolute top-3 left-0 w-full text-center">
+                                <span className={`text-[10px] font-medium ${cor.replace('bg-', 'text-')}`}>{text}</span>
+                              </div>
+                            </>
+                          )
+                        })()}
+                      </div>
+                      <div className="h-4"></div> {/* Espaçador para o texto do termômetro */}
+                    </div>
+                  )}
+
+                  {entradaAjustada && (
+                    <div className="bg-orange-900/20 border border-orange-700/40 rounded-xl px-3 py-3 mb-4 mt-2">
+                      <p className="text-xs text-orange-400 font-semibold mb-1">Entrada ajustada pela Caixa</p>
+                      <p className="text-xs text-orange-300">
+                        Sua entrada de <span className="font-medium">R$ {entradaAjustada.solicitada.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span> foi ajustada para <span className="font-medium">R$ {entradaAjustada.ajustada.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>. Com sua renda, o máximo financiável é <span className="font-medium">R$ {entradaAjustada.valorFinanciamento.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span> (parcela limitada a 30% da renda mensal).
+                      </p>
+                    </div>
+                  )}
+
+                  {extracted.warnings.length > 0 && (
+                    <div className="bg-amber-900/20 border border-amber-800/40 rounded-xl px-3 py-2 mb-4">
+                      <p className="text-xs text-amber-400 font-medium mb-1">Campos não encontrados:</p>
+                      {extracted.warnings.map((w) => <p key={w} className="text-xs text-amber-500">· {w}</p>)}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <button onClick={() => setEtapa('produtos')} className="py-3 rounded-xl border border-gray-700 text-gray-400 text-sm font-medium hover:border-gray-500 transition-all cursor-pointer">
+                      Voltar
+                    </button>
+                    <button onClick={() => onComplete(extracted.params)} className="py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-all cursor-pointer">
+                      Aplicar
+                    </button>
+                  </div>
+                </>
               )}
-
-              {extracted.warnings.length > 0 && (
-                <div className="bg-amber-900/20 border border-amber-800/40 rounded-xl px-3 py-2 mb-4">
-                  <p className="text-xs text-amber-400 font-medium mb-1">Campos não encontrados:</p>
-                  {extracted.warnings.map((w) => <p key={w} className="text-xs text-amber-500">· {w}</p>)}
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3">
-                <button onClick={() => setEtapa('produtos')} className="py-3 rounded-xl border border-gray-700 text-gray-400 text-sm font-medium hover:border-gray-500 transition-all cursor-pointer">
-                  Voltar
-                </button>
-                <button onClick={() => onComplete(extracted.params)} className="py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-all cursor-pointer">
-                  Aplicar
-                </button>
-              </div>
-            </>
+            </div>
           )}
         </div>
 

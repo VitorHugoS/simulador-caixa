@@ -208,6 +208,7 @@ export function CaixaApiImport({ state, dispatch }: Props) {
     if (!cache || !selectedUF || !selectedMunicipio) return
     const { rendaNum, valorImovelNum, valorEntradaNum, prazoNum, dataNascimentoAPI } = cache
 
+    setEtapa('preview')
     isRunningRef.current = true
     // Ordena: produto selecionado primeiro, depois os demais em ordem
     const idx = produtos.findIndex((p) => p.codigo === produtoInicial.codigo)
@@ -469,6 +470,9 @@ export function CaixaApiImport({ state, dispatch }: Props) {
                             </button>
                           ))}
                         </div>
+                        <span className="text-[10px] text-gray-500 px-1 mt-0.5 text-center">
+                          {sistema === 'sac' ? 'Parcelas que diminuem ao longo do tempo' : 'Parcelas fixas do início ao fim'}
+                        </span>
                       </div>
                     </div>
                   </div>
