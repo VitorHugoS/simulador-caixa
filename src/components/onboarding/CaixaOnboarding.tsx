@@ -299,7 +299,7 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-2xl">
 
           {/* ── Etapa: formulário ── */}
-          {etapa === 'form' && (
+          {etapa === 'form' && !loading && (
             <>
               <div className="mb-5 flex items-center justify-between">
                 <div>
