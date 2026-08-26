@@ -54,7 +54,7 @@ export function useUrlState() {
       const encoded = encodeState(state)
       router.replace(`${pathname}?${encoded}`, { scroll: false })
     }, 300)
-  }, [state.params, state.modo, pathname, router])
+  }, [state, pathname, router])
 
   return { state, dispatch, hasUrlState }
 }
