@@ -355,7 +355,7 @@ export function CaixaApiImport({ state, dispatch }: Props) {
             </div>
 
             {/* ── Etapa: seleção de enquadramento ── */}
-            {etapa === 'produtos' && (
+            {etapa === 'produtos' && !loading && (
               <div className="flex flex-col gap-3">
                 {produtos.map((p) => {
                   const nome = p.nomeProduto ?? p.nome ?? p.descricao ?? `Produto ${p.codigo}`
@@ -405,7 +405,7 @@ export function CaixaApiImport({ state, dispatch }: Props) {
               </div>
             )}
 
-            {etapa === 'form' && (
+            {etapa === 'form' && !loading && (
               <>
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="text-white font-semibold text-lg">

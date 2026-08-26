@@ -1,239 +1,190 @@
-# Relatório de Análise UX/UI — FinanSim
+# Relatório de Análise UX/UI — FinanSim (v2, baseada em evidência)
 
-**Data:** 2026-08-27  
-**Versão analisada:** Produção (descomplica-financiamento.vercel.app)  
-**Responsável:** Análise sistemática de UX/UI para redesign/refinamento
-
----
-
-## 1. Visão Geral do Produto
-
-### Surface Type: **Monitor/Configure**
-FinanSim é um **simulador de financiamento imobiliário**. O usuário é um potencial mutuário que quer:
-1. Comparar sistemas de amortização (SAC vs Price)
-2. Simular aportes extras e uso do FGTS
-3. Visualizar economia de juros e prazo
-
-**Usuário-alvo:** Brasileiros planejando comprar imóvel financiado, com pouca familiaridade técnica mas necessidade de precisão.
+**Data:** 2026-08-27
+**Versão analisada:** Produção (`descomplica-financiamento.vercel.app`) + código local (`main`, commit `193f758`)
+**Método:** Inspeção de DOM ao vivo (browser-use), leitura de todos os componentes em `src/`, medição de contraste WCAG de cores computadas, captura de 7 estados de tela.
+**Observação:** A análise visual automática (visão) não estava disponível neste ambiente; a avaliação de cor/contraste foi feita por cálculo WCAG sobre `getComputedStyle` real, o que é mais preciso que descrição de imagem.
 
 ---
 
-## 2. Arquitetura da Informação
+## 0. Screenshots (evidência)
 
-### Fluxo atual:
+Pasta: `docs/ux-analysis/`
 
-```
-[Onboarding - Etapa 1: Valores] 
-    ↓
-[Onboarding - Etapa 2: Localização/Tipo]
-    ↓
-[Onboarding - Etapa 3: Seleção de Produto CAIXA (opcional)]
-    ↓
-[Onboarding - Etapa 4: Preview da Simulação CAIXA (opcional)]
-    ↓
-[Dashboard Principal - Simulação Manual]
-```
-
-### Componentes mordidos:
-- `CaixaOnboarding.tsx` — Onboarding multi-step com 4 etapas
-- `InputPanel.tsx` — Painel de parâmetros da simulação
-- `CaixaApiImport.tsx` — Importação via API CAIXA (FAB)
-- `KPICards.tsx` — Cards comparativos SAC/Price/Personalizado
-- `BalanceChart.tsx` — Gráfico de evolução do saldo devedor
-- `PaymentChart.tsx` — Gráfico de evolução das parcelas
-- `EventList.tsx` — Lista de aportes/templates
-- `AmortizationModal.tsx` — Modal para adicionar aportes
-- `AmortTable.tsx` — Tabela mês a mês colapsável
-- `RowDetailModal.tsx` — Detalhe por mês (eventos)
+| Arquivo | Estado capturado |
+|---------|-----------------|
+| `01-onboarding-step1.png` | Onboarding, Etapa 1 (Valores da simulação) |
+| `02-dashboard-default.png` | Dashboard padrão (PV=300k, 360m, SAC), sem eventos |
+| `03-dashboard-bottom-fab.png` | Rodapé do dashboard + FAB "Simular pela Caixa" |
+| `04-dashboard-with-events.png` | Dashboard com FGTS ativo (templates CLT) |
+| `05-modal-aporte.png` | Modal "Adicionar amortização" (impacto estimado) |
+| `06-modal-caixa-form.png` | Modal "Simulação pela Caixa" (formulário) |
+| `07-mobile-dashboard.png` | Dashboard em viewport mobile 390×844 (iPhone) |
 
 ---
 
-## 3. Problemas de UX Identificados
+## 1. O que JÁ FUNCIONA BEM (não mexer)
 
-### 🔴 ALTA Prioridade
+Estes itens foram implementados (commits recentes `dd453fd`, `48bb1c2`) e estão corretos — o relatório anterior os citava como problemas, mas o código atual já os resolveu:
 
-#### 3.1 Onboarding longo demais para valor percebido
-**Problema:** 4 etapas obrigatórias antes de ver qualquer resultado.  
-**Etapa 1** (renda, imóvel, entrada, prazo, sistema) + **Etapa 2** (UF, cidade, nascimento, tipo) + **Etapa 3** (busca API CAIXA) + **Etapa 4** (preview com múltiplas tentativas).
+1. **Onboarding com "Pular e usar valores padrão"** — existe (`CaixaOnboarding.tsx:596`). O usuário não é obrigado a preencher tudo.
+2. **Termômetro "Saúde da Aprovação"** — existe no preview da Caixa (`CaixaApiImport.tsx:622-648`), com cores verde/amarelo/vermelho e texto contextual. Excelente trust signal.
+3. **Skeletons durante loading da API** — existem (`CaixaApiImport.tsx:601-610`).
+4. **Micro-copy e hints dinâmicos** — existem (ex: `InputField` tooltip, hint de entrada mínima, subtítulo do toggle SAC/Price).
+5. **Cards de Aceleração CLT com gradiente e toggle visual** — existem (`CLTTemplates.tsx:87-149`), com estados ativo/inativo distintos.
+6. **Modal de aporte com "Impacto estimado" ao vivo** — existe (`AmortizationModal.tsx:194-219`), calculando juros/tempo economizados antes de aplicar.
+7. **FAB "Simular pela Caixa" sempre visível** — existe, fixo bottom-right (`CaixaApiImport.tsx:326-334`).
+8. **Toasts de fallback de API** — existem (produto indisponível → tenta próximo).
 
-**Impacto:** Abandono alto. Usuário quer ver números agora.
+**Conclusão:** o produto já tem boa base de UX. O que segue são os pontos que **ainda** têm problema real, com severidade justificada por evidência.
+
+---
+
+## 2. Problemas de Acessibilidade — CONTRASTE (evidência WCAG)
+
+Medição feita sobre as cores reais computadas (`getComputedStyle`) do app em produção. Fundo `bg-gray-950` = `rgb(10,10,10)`, `bg-gray-900` = `rgb(17,24,39)`.
+
+| Texto (classe Tailwind) | Cor | Contraste s/ #0a0a0a | Contraste s/ #111827 | WCAG AA (≥4.5:1) |
+|--------------------------|-----|----------------------|----------------------|------------------|
+| `text-gray-300` (labels) | rgb(209,213,219) | 13.44:1 | 12.04:1 | ✅ PASS |
+| `text-gray-400` | rgb(156,163,175) | 7.80:1 | 6.99:1 | ✅ PASS |
+| `text-gray-500` (suffix, hints, legendas) | rgb(107,114,128) | **4.10:1** | **3.67:1** | ❌ **FAIL** |
+| `text-gray-600` (subtexto, footer, micro) | rgb(75,85,99) | **2.62:1** | **2.35:1** | ❌ **FAIL** |
+| `text-green-400` / `text-red-400` | — | 11.36 / 7.16 | 10.18 / 6.41 | ✅ PASS |
+
+**Impacto:** Qualquer texto em `gray-500` ou `gray-600` (suffixos de input como "R$", "% a.a.", "m"; legendas de gráfico; subtítulo do toggle Sistema; footer "Dados apenas ilustrativos"; micro-copy do modal) **não atinge WCAG AA para texto normal** (exige 4.5:1). `gray-600` é quase ilegível (2.35–2.62:1, próximo do limite de 3:1 para texto grande apenas).
+
+**Onde aparece no código (amostra):**
+- `SimulatorClient.tsx:130` — footer `text-gray-700` ("FinanSim · Dados apenas ilustrativos") → pior ainda que gray-600.
+- `InputPanel.tsx:157` — subtítulo `text-gray-600`.
+- `BalanceChart.tsx:84,89` e `PaymentChart.tsx:41,45` — ticks de eixo `text-gray-500` (#6b7280).
+- `KPICards.tsx:129` — label de métrica `text-gray-500`.
+- `AmortTable.tsx:80` — cabeçalhos `text-gray-500` / `text-white/60`.
+
+**Recomendação (alta prioridade):** Substituir `gray-500 → gray-400` e `gray-600 → gray-400/500` em todos os textos informativos. Footer `gray-700 → gray-500`. Isso é uma mudança de token, não de layout.
+
+---
+
+## 3. Problemas de Hierarquia e Comunicação
+
+### 3.1 Coluna "Personalizado" nos KPI Cards sempre zera sem eventos — confuso
+**Evidência:** `KPICards.tsx:138` — o destaque "winner" (`WinnerCheck`) e o badge de % só aparecem quando `hasEvents` é verdadeiro. Sem eventos, a coluna "Personalizado" mostra os mesmos valores de SAC ou Price (pois `personalizado` == simulação pura quando não há aportes), mas **sem nenhum indicador de que está vazia/redundante**.
+
+**Problema:** O usuário vê 3 colunas idênticas (SAC = Price = Personalizado) e não entende por que existe uma terceira. Não há label explicando "Personalizado = sua simulação com aportes".
+
+**Recomendação:** 
+- Quando `!hasEvents`, mostrar a coluna "Personalizado" desabilitada/esmaecida com tooltip "Adicione aportes para comparar" — ou ocultá-la por padrão (accordion).
+- Adicionar subtítulo sob o header "Personalizado": "Ative aportes para preencher".
+
+**Severidade:** MÉDIA (confusão cognitiva, não bloqueante).
+
+### 3.2 Gráfico de saldo devedor: eixo Y sem unidade e "k" ambíguo
+**Evidência:** `BalanceChart.tsx:88-91` — `YAxis tickFormatter={(v) => (v/1000).toFixed(0)+'k'}`, sem `label` de eixo. O "k" significa milhares de reais, mas não diz "R$". No eixo X, `tickFormatter={(v) => v+'m'}` (meses) com `interval={59}` — só mostra 6 rótulos em 360 meses.
+
+**Problema:** 
+- Usuário não sabe que o eixo Y é em R$ (milhares).
+- Sem linha de referência em R$ 0 (quitado) nem anotação "Saldo zera no mês X".
+- Tooltip existe mas só dispara no hover; em mobile (touch) não há estado de repouso informativo.
 
 **Recomendação:**
-- Pré-preenher Etapa 1 com valores realistas defaults (PV=300k, n=360, i=11.49%, TR=0)
-- Permitir pular direto para resultado em 1 clique ("Usar valores padrão")
-- Etapas 2-3 são opcionais (só se quiser puxar dados CAIXA reais)
-- O onboarding de 4 etapas deveria ser: **uma tela** com todos os campos visíveis
+- Adicionar `YAxis` com `label={{ value: 'Saldo (R$ mil)', angle: -90, position: 'insideLeft' }}`.
+- Anotar o ponto de quitação (referência) quando `hasEvents`.
 
-#### 3.2 "Simular pela Caixa" está escondido demais
-**Problema:** O botão FAB "Simular pela Caixa" fica no canto inferior direito do InputPanel. É o diferencial do produto (integração com API oficial) mas está no nível visual de um botão secundário.
+**Severidade:** MÉDIA.
+
+### 3.3 Gráfico de composição da parcela amostra a cada 12 meses — pode esconder irregularidades
+**Evidência:** `PaymentChart.tsx:19` — `serie.filter((_, i) => i % 12 === 0)`. Reduz 360→30 pontos.
+
+**Problema:** Se o usuário usa aporte único (não recorrente), o pico some da amostra anual. A barra "Aporte" pode não aparecer nunca se o aporte cai no mês 6, por ex.
+
+**Recomendação:** Amostrar a cada 6 meses, ou garantir que meses com `aporteExtra > 0` sempre entrem na amostra.
+
+**Severidade:** BAIXA (precisão de visualização).
+
+### 3.4 Toggle SAC/Price no InputPanel e nos KPI Cards usam cores diferentes dos gráficos
+**Evidência:** 
+- Cards KPI: SAC=`text-blue-400`, Price=`text-orange-400`, Personalizado=`text-white` (`KPICards.tsx:91-93`).
+- Gráficos: Price=`#ef4444` (vermelho), SAC=`#3b82f6` (azul), Personalizado=`#10b981` (verde) (`BalanceChart.tsx:19-23`, `PaymentChart.tsx:58-61`).
+
+**Problema:** Price é **laranja** nos cards e **vermelho** nos gráficos. Mapeamento mental inconsistente entre as duas visualizações do mesmo dado.
+
+**Recomendação:** Unificar a paleta: SAC=azul, Price=laranja (ou vermelho) em TODOS os lugares. Personalizado=verde em ambos.
+
+**Severidade:** BAIXA (consistência de design system).
+
+---
+
+## 4. Problemas de Fluxo / Onboarding
+
+### 4.1 Onboarding de 2 passos ainda exige UF + Cidade + Nascimento para SIMULAR pela Caixa
+**Evidência:** `CaixaApiImport.tsx:120-143` (`handleNextStep`) valida renda/imovel/entrada/prazo no passo 1; passo 2 exige UF, cidade, nascimento, tipo, categoria antes de `handleBuscar`.
+
+**Problema:** Para quem quer só ver a simulação manual (não pela Caixa), o onboarding inicial (`CaixaOnboarding.tsx`) já vem com "Pular". Mas o modal "Simular pela Caixa" pede Nascimento + UF + Cidade — dados sensíveis que o usuário pode não querer dar só para "experimentar".
+
+**Recomendação:** Permitir "Buscar simulação" com apenas renda + imóvel + entrada + prazo, deixando UF/Cidade/Nascimento como opcionais (a API da Caixa pode falhar, mas mostrar erro claro). Ou pré-preencher UF via geo detect.
+
+**Severidade:** MÉDIA (atrito no diferencial do produto).
+
+### 4.2 "Pular e usar valores padrão" não deixa claro o que são os padrões
+**Evidência:** `CaixaOnboarding.tsx:596` — botão texto "Pular e usar valores padrão" sem mostrar os valores.
+
+**Problema:** O usuário não sabe se vai ver uma simulação real ou "padrão fictício". Poderia gerar desconfiança ("será que meus dados foram usados?").
+
+**Recomendação:** "Começar com exemplo (R$ 300k, 360m, SAC)" — explícito.
+
+**Severidade:** BAIXA.
+
+---
+
+## 5. Mobile / Responsivo
+
+**Evidência:** `07-mobile-dashboard.png` (390×844). O layout usa `max-w-6xl`, `grid-cols-1 sm:grid-cols-2` nos inputs, FAB `hidden sm:inline` para texto. Avaliado por CSS, não por visão (indisponível).
+
+**Pontos verificados no código:**
+- Inputs quebram para 1 coluna em mobile (`InputPanel.tsx:54` `flex-col ... lg:flex-row`) — OK.
+- Templates CLT: `grid-cols-2 md:grid-cols-3` (`CLTTemplates.tsx:98`) — em mobile o FGTS ocupa `col-span-2` (ok).
+- **Problema em mobile:** O `subtexto` do toggle Sistema (`text-gray-600`, `hidden lg:block` em `InputPanel.tsx:157`) some completamente no mobile — o usuário não vê a diferença SAC/Price. E o hint de entrada mínima some.
+- Tabela mês a mês: `overflow-x-auto` (`AmortTable.tsx:74`) — OK, mas 9 colunas em 390px exigem scroll horizontal intenso.
 
 **Recomendação:**
-- Fazer um CTA primário no topo do painel: "⚡ Simular com dados reais da Caixa"
-- Ou um banner destacado explicando o valor: "Preencha uma vez e compare com taxas reais"
+- Mostrar o subtítulo SAC/Price também em mobile (ou como tooltip no toggle).
+- Considerar tabela com colunas prioritárias (Mês, Parcela, Saldo) em mobile, expandir para o resto.
 
-#### 3.3 Gráfico principal sem contexto de leitura
-**Problema:** O gráfico de "Evolução do saldo devedor" mostra 3 linhas (Price, SAC, Personalizado) mas:
-- Sem Y-axis title claro
-- Sem tooltip mostrando valores absolutos por mês (só hover geral)
-- "k" no eixo Y é ambíguo (milhares? Não fica claro que é R$)
-
-**Recomendação:**
-- Y-axis label: "Saldo devedor (R$)"
-- Tooltip ao hover: mostrar valor formatado (R$ XXX.XXX) + mês
-- Anotar marcos importantes: "Saldo zera no mês X"
-- Linha de referência horizontal em R$ 0 (quitado)
+**Severidade:** MÉDIA (mobile é provável viai principal de acesso).
 
 ---
 
-### 🟡 MÉDIA Prioridade
+## 6. Resumo de Prioridades (revisado, baseado em evidência)
 
-#### 3.4 Cards comparativos (KPI) — hierarquia confusa
-**Problemo:** A tabela SAC/Price/Personalizado mostra:
-- Juros totais (3 valores)
-- Custo total (3 valores)
-- Prazo real (3 valores)
-- Economia de prazo (3 valores)
-
-Problemas:
-1. **SAC e Price são calculados com os mesmos parâmetros** — isso é redundante para quem já sabe qual sistema quer
-2. "Economia de prazo" só aparece se h eventos configurados — mas a pessoa pode não entender POR QUE está zerado
-3. Destaque verde de "winner" só funciona se hasEvents=true — confuso
-
-**Recomendação:**
-- Só mostrar a coluna "Personalizado" se houver eventos configurados
-- Ou: tornar SAC/Price colapsáveis (accordion) para reduzir ruído
-- Explicar em texto: "Configure aportes para ver a comparação completa"
-- Ou inverter: mostrar só o resultado do sistema escolhido + diferença vs alternativa
-
-#### 3.5 Templates de aporte (CLT) — visual flat
-**Problema:** Os botões "13º Salário", "Férias (1/3)", "Usar FGTS" estão em uma linha horizontal com mesmo peso visual de campos de input.
-
-**Recomendação:**
-- Cards selecionáveis com ícone + descrição curta
-- Ao selecionar, mostrar preview do impacto: "Economiza R$ XX.XXX e Xm"
-- Agrupar visualmente: "Aceleração com CLT" como subsection
-
-#### 3.6 Input de salário (FGTS) está dentro de "Usar FGTS"
-**Problema:** O campo "Seu salário bruto (Base de cálculo)" aparece após clicar "Usar FGTS", mas não fica claro que é pré-requisito.
-
-**Recomendação:**
-- Mostrar o input sempre (não condicional), com estado disabled até marcar FGTS
-- Label clara: "Salário bruto — base para cálculo do FGTS"
-
-#### 3.7 Tabela mês a mês — escondida por padrão
-**Problema:** A tabela mais detalhada está colapsada. Para ver, precisa expandir. Mas muitos usuários querem ver os números.
-
-**Recomendação:**
-- Mostrar sempre as primeiras 12 linhas (1 ano) expandidas
-- Botão "Ver tabela completa" para abrir scroll infinito ou modal
-- Sticky header com nomes das colunas
-
-#### 3.8 Sem empty states elaborados
-**Problema:** "Nenhum aporte configurado. Adicione aportes para simular quitação antecipada." — texto plano, sem guia visual.
-
-**Recomendação:**
-- Ilustração/ícone deaportes vazios
-- CTA direto: "Adicionar primeiro aporte" (botão primário)
-- Preview do impacto potencial: "Um aporte de R$ 5.000/mês economiza ~R$ 120k em juros"
+| # | Problema | Evidência | Severidade | Esforço |
+|---|----------|-----------|------------|---------|
+| 1 | Contraste gray-500/gray-600 falha WCAG AA | medição 4.10/2.62:1 | **ALTA** | Baixo (token) |
+| 2 | Footer `gray-700` ilegível | medição <2:1 | **ALTA** | Baixo |
+| 3 | Coluna "Personalizado" redundante sem eventos | `KPICards.tsx:138` | MÉDIA | Médio |
+| 4 | Eixo Y do gráfico sem unidade "R$" | `BalanceChart.tsx:88` | MÉDIA | Baixo |
+| 5 | Onboarding Caixa pede dados sensíveis demais | `CaixaApiImport.tsx:120` | MÉDIA | Médio |
+| 6 | Toggle SAC/Price some em mobile | `InputPanel.tsx:157 hidden lg:block` | MÉDIA | Baixo |
+| 7 | Paleta SAC/Price inconsistente cards×gráficos | `KPICards` vs `BalanceChart` | BAIXA | Baixo |
+| 8 | Amostragem anual esconde aportes únicos | `PaymentChart.tsx:19` | BAIXA | Baixo |
+| 9 | "Pular" sem explicitar valores padrão | `CaixaOnboarding.tsx:596` | BAIXA | Baixo |
 
 ---
 
-### 🟢 BAIXA Prioridade (Polish)
+## 7. Notas para o Agente de Implementação
 
-#### 3.9 Tooltips nos inputs são hover-only
-Em mobile (touch), tooltip não funciona. Recomendação: tap para abrir tooltip, ou usar texto de ajuda abaixo do campo.
-
-#### 3.10 Botão "Compartilhar" poderia ser mais informativo
-Mostrar preview do link: "Link copiado inclui seus parâmetros" ou mostrar um toast com confirmação visual melhor.
-
-#### 3.11 Feedback visual de loading
-Quando altera inputs numéricos, há debounce de 400ms. Sem loading indicator, o usuário pode pensar que nada aconteceu.
-
-#### 3.12 Cores de chart inconsistentes com cards
-- Cards: SAC=blue, Price=orange, Personalizado=white
-- Charts: Price=red, SAC=blue, Personalizado=green
-- Dificulta mapeamento mental.
-
-**Recomendação:** Unificar palette em todo o app.
+- **Design system atual:** Tailwind v4 (`@import "tailwindcss"`), Geist font, Recharts. Tokens em `globals.css` (`:root`).
+- **Regra crítica do repo:** `AGENTS.md` avisa que esta é "NOT the Next.js you know" — APIs/convensões diferem. **Ler `node_modules/next/dist/docs/` antes de escrever código.**
+- **Correção de contraste (item 1-2):** mudar em `globals.css` ou substituir classes `gray-500→gray-400`, `gray-600→gray-400`, `gray-700→gray-500` nos arquivos listados na Seção 2. Testar com `npx @axe-core/cli` ou Lighthouse após.
+- **Não remover** Termômetro, Skeletons, micro-copy, FAB — já estão bons.
+- **Testar em mobile real** (DevTools 390px) os itens 5-6.
 
 ---
 
-## 4. Problemas de Acessibilidade
+## 8. Arquivos analisados
 
-### 4.1 Contraste
-- Textos `text-gray-500` em `bg-gray-900` — verificar WCAG AA (4.5:1)
-- Textos `text-gray-600` em `bg-gray-950` — falha provável em AA
-
-### 4.2 Focus states
-- Inputs têm `focus-within:border-blue-500` mas botões toggle (SAC/Price) não têm focus ring visível
-- Recomendação: `:focus-visible` com outline 2px
-
-### 4.3 Touch targets
-- Botões de remover (X) nos eventos: ~24px — abaixo dos 44px recomendados
-- Ícones de info: ~16px — muito pequeno
-
-### 4.4 Sem skip-link
-Não há "Skip to content" para leitores de tela.
-
----
-
-## 5. Problemas de Copy/Textos
-
-| Local | Texto atual | Sugestão |
-|-------|-------------|----------|
-| KPICards | "Juros totais" | "Total de juros" (mais natural) |
-| KPICards | "Custo total" | "Custo total do financiamento" |
-| InputPanel | "DFI + admin" | "Seguro DFI + Administração" (ou tooltip mais claro) |
-| EventList | "Aportes extras" | "Aportes extras e antecipações" |
-| CaixaOnboarding | "Buscar simulação" | "Buscar taxas na Caixa" |
-
----
-
-## 6. Resumo de Prioridades para Implementação
-
-### Sprint 1 — Quick Wins (1-2 dias)
-1. **Reduzir fricção do onboarding:** Pre-preenher tudo e mostrar resultado imediato
-2. **Simular pela Caixa como CTA primário:** No topo, não escondido
-3. **Cores unificar:** Charts e cards com mesma palette
-4. **Contraste de textos:** Gray-500/600 → Gray-400 mínimo
-
-### Sprint 2 — Dashboard Clarity (3-5 dias)
-5. **Gráfico com Y-axis claro** + tooltip por mês + linha de referência
-6. **KPI cards mais inteligentes:** Só mostrar o que importa
-7. **Empty states com guia:** Template de aporte como CTA
-8. **Tabela mais visível:** Primeiras 12 linhas expandidas
-
-### Sprint 3 — Polimento (2-3 dias)
-9. **Tooltips mobile-friendly**
-10. **Touch targets 44px mínimo**
-11. **Focus states visíveis**
-12. **Loading indicators em inputs**
-
----
-
-## 7. Screenshots Salvos
-
-| Arquivo | Descrição |
-|---------|-----------|
-| `screenshot-main-dashboard.png` | Dashboard com simulação padrão (PV=300k, 360m, SAC) |
-
----
-
-## 8. Referências de Design
-
-- **Linear** — Limpeza, densidade controlada, hierarquia por espaçamento
-- **Stripe Dashboard** — Charts com tooltips ricos e contexto
-- **Notion** — Empty states com guias visuais
-- **Caixa Econômica** — Trust signals e clareza em dados financeiros
-
----
-
-## Nota do Agente de Implementação
-
-Este documento é um guia de **o que** melhorar. A implementação técnica deve:
-1. Usar o design system já existente (Tailwind + Geist + Recharts)
-2. Manter a arquitetura de componentes atual (só refinar)
-3. Testar com o fluxo real de usuário antes de considerar done
-4. Verificar contraste com a ferramenta axe ou similar
-
-O repositório está em `Documents/dev/web-sim-hab/finansim/`
+`src/app/page.tsx`, `SimulatorClient.tsx`, `layout.tsx`, `globals.css`,
+`components/onboarding/CaixaOnboarding.tsx`, `components/inputs/InputPanel.tsx`,
+`InputField.tsx`, `CaixaApiImport.tsx`, `components/kpis/KPICards.tsx`,
+`components/charts/BalanceChart.tsx`, `PaymentChart.tsx`,
+`components/amortization/EventList.tsx`, `CLTTemplates.tsx`, `AmortizationModal.tsx`,
+`components/table/AmortTable.tsx`, `components/ui/icons.tsx`.
