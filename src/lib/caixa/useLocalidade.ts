@@ -13,7 +13,7 @@ export function useLocalidade() {
   const [municipios, setMunicipios] = useState<CaixaMunicipio[]>([])
   const [municipiosLoading, setMunicipiosLoading] = useState(false)
   const [selectedUF, setSelectedUFState] = useState<CaixaUF | null>(null)
-  const [selectedMunicipio, setSelectedMunicipio] = useState<CaixaMunicipio | null>(null)
+  const [selectedMunicipioState, setSelectedMunicipioState] = useState<CaixaMunicipio | null>(null)
   const [municipioSearch, setMunicipioSearch] = useState('')
   const [geoStatus, setGeoStatus] = useState<'idle' | 'detecting' | 'done' | 'denied'>('idle')
 
@@ -28,7 +28,7 @@ export function useLocalidade() {
   useEffect(() => {
     if (!selectedUF) { setMunicipios([]); return }
     setMunicipios([])
-    setSelectedMunicipio(null)
+    setSelectedMunicipioState(null)
     setMunicipioSearch('')
     setMunicipiosLoading(true)
     fetchMunicipios(selectedUF.sgUf)
@@ -48,13 +48,13 @@ export function useLocalidade() {
 
   // Restore by codigo (from cache — exact match)
   useEffect(() => {
-    if (!pendingCodigo || municipios.length === 0 || selectedMunicipio) return
+    if (!pendingCodigo || municipios.length === 0 || selectedMunicipioState) return
     const match = municipios.find((m) => m.codigo === pendingCodigo)
     if (match) {
-      setSelectedMunicipio(match)
+      setSelectedMunicipioState(match)
       setPendingCodigo(null)
     }
-  }, [pendingCodigo, municipios, selectedMunicipio])
+  }, [pendingCodigo, municipios, selectedMunicipioState])
 
   // Restore by name (from geolocation)
   useEffect(() => {
@@ -62,7 +62,7 @@ export function useLocalidade() {
     const target = norm(pendingCity)
     const match = municipios.find((m) => norm(m.nome) === target)
     if (match) {
-      setSelectedMunicipio(match)
+      setSelectedMunicipioState(match)
       setMunicipioSearch('')
       setPendingCity(null)
     }
@@ -109,6 +109,17 @@ export function useLocalidade() {
   function setSelectedUF(uf: CaixaUF | null) {
     setSelectedUFState(uf)
     setPendingUFSg(null)
+    setGeoStatus('idle')
+  }
+
+  function setSelectedMunicipio(m: CaixaMunicipio | null) {
+    setSelectedMunicipioState(m)
+    setGeoStatus('idle')
+  }
+
+  function handleMunicipioSearch(s: string) {
+    setMunicipioSearch(s)
+    if (s.length > 0) setGeoStatus('idle')
   }
 
   function loadFromCache(cached: { ufSgUf?: string; municipioCodigo?: number; municipioNome?: string }) {
@@ -126,8 +137,8 @@ export function useLocalidade() {
   return {
     ufs, municipios, municipiosFiltrados, municipiosLoading,
     selectedUF, setSelectedUF,
-    selectedMunicipio, setSelectedMunicipio,
-    municipioSearch, setMunicipioSearch,
+    selectedMunicipio: selectedMunicipioState, setSelectedMunicipio,
+    municipioSearch, setMunicipioSearch: handleMunicipioSearch,
     geoStatus, geoAvailable, requestGeo, tryAutoGeo,
     loadFromCache,
   }
