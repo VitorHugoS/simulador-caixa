@@ -596,59 +596,84 @@ export function CaixaApiImport({ state, dispatch }: Props) {
               </>
             )}
 
-            {etapa === 'preview' && extracted && (
-              <>
-                <div className="flex flex-col gap-2 mb-4">
-                  {rows.map(({ label, value }) => (
-                    <div key={label} className="flex items-center justify-between py-2 border-b border-gray-800">
-                      <span className="text-xs text-gray-400">{label}</span>
-                      {value
-                        ? <span className="text-sm font-medium text-white">{value}</span>
-                        : <span className="text-xs text-gray-600 italic">não encontrado</span>
-                      }
-                    </div>
-                  ))}
-                </div>
-
-                {entradaAjustada && (
-                  <div className="bg-orange-900/20 border border-orange-700/40 rounded-xl px-3 py-3 mb-4">
-                    <p className="text-xs text-orange-400 font-semibold mb-1">Entrada ajustada pela Caixa</p>
-                    <p className="text-xs text-orange-300">
-                      Sua entrada de{' '}
-                      <span className="font-medium">R$ {entradaAjustada.solicitada.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>{' '}
-                      foi ajustada para{' '}
-                      <span className="font-medium">R$ {entradaAjustada.ajustada.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>.
-                      {' '}Com sua renda, o máximo financiável é{' '}
-                      <span className="font-medium">R$ {entradaAjustada.valorFinanciamento.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>{' '}
-                      (parcela limitada a 30% da renda mensal).
-                    </p>
-                  </div>
-                )}
-
-                {extracted.warnings.length > 0 && (
-                  <div className="bg-amber-900/20 border border-amber-800/40 rounded-xl px-3 py-2 mb-4">
-                    <p className="text-xs text-amber-400 font-medium mb-1">Campos não encontrados:</p>
-                    {extracted.warnings.map((w) => (
-                      <p key={w} className="text-xs text-amber-500">· {w}</p>
+            {(etapa === 'preview' || loading) && (
+              <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                {loading ? (
+                  <div className="flex flex-col gap-3 mb-6">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="flex items-center justify-between py-2 border-b border-gray-800/50">
+                        <div className="h-3 bg-gray-800 rounded-full w-24 animate-pulse"></div>
+                        <div className="h-4 bg-gray-800 rounded-full w-20 animate-pulse"></div>
+                      </div>
                     ))}
+                    <div className="h-16 bg-gray-800/50 rounded-xl w-full mt-2 animate-pulse"></div>
                   </div>
-                )}
+                ) : extracted && (
+                  <>
+                    <div className="flex flex-col gap-2 mb-4">
+                      {rows.map(({ label, value }) => (
+                        <div key={label} className="flex items-center justify-between py-2 border-b border-gray-800">
+                          <span className="text-xs text-gray-400">{label}</span>
+                          {value ? <span className="text-sm font-medium text-white">{value}</span> : <span className="text-xs text-gray-600 italic">não encontrado</span>}
+                        </div>
+                      ))}
+                    </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setEtapa('form')}
-                    className="py-3 rounded-xl border border-gray-700 text-gray-400 text-sm font-medium hover:border-gray-500 transition-all"
-                  >
-                    Voltar
-                  </button>
-                  <button
-                    onClick={handleApply}
-                    className="py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all"
-                  >
-                    Aplicar
-                  </button>
-                </div>
-              </>
+                    {extracted.raw.primeiraParcela && (
+                      <div className="mb-5">
+                        <div className="flex justify-between items-end mb-2">
+                          <span className="text-xs text-gray-400 font-medium">Saúde da Aprovação</span>
+                          <span className="text-xs font-semibold text-white">R$ {extracted.raw.primeiraParcela.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} <span className="text-gray-500 font-normal">/ 1ª parcela</span></span>
+                        </div>
+                        <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden flex relative">
+                          {(() => {
+                            const rendaInformada = parseFloat(renda) || 1
+                            const pct = Math.min(100, Math.max(0, (extracted.raw.primeiraParcela / (rendaInformada * 0.3)) * 100))
+                            let cor = 'bg-green-500'
+                            let text = 'Muito provável de aprovar'
+                            if (pct > 80) { cor = 'bg-yellow-500'; text = 'Próximo do limite da renda' }
+                            if (pct >= 100) { cor = 'bg-red-500'; text = 'Risco de não aprovação (passa de 30%)' }
+                            return (
+                              <>
+                                <div className={`h-full ${cor} transition-all duration-1000 ease-out`} style={{ width: `${pct}%` }}></div>
+                                <div className="absolute top-3 left-0 w-full text-center">
+                                  <span className={`text-[10px] font-medium ${cor.replace('bg-', 'text-')}`}>{text}</span>
+                                </div>
+                              </>
+                            )
+                          })()}
+                        </div>
+                        <div className="h-4"></div>
+                      </div>
+                    )}
+
+                    {entradaAjustada && (
+                      <div className="bg-orange-900/20 border border-orange-700/40 rounded-xl px-3 py-3 mb-4 mt-2">
+                        <p className="text-xs text-orange-400 font-semibold mb-1">Entrada ajustada pela Caixa</p>
+                        <p className="text-xs text-orange-300">
+                          Sua entrada de <span className="font-medium">R$ {entradaAjustada.solicitada.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span> foi ajustada para <span className="font-medium">R$ {entradaAjustada.ajustada.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>. Com sua renda, o máximo financiável é <span className="font-medium">R$ {entradaAjustada.valorFinanciamento.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>.
+                        </p>
+                      </div>
+                    )}
+
+                    {extracted.warnings.length > 0 && (
+                      <div className="bg-amber-900/20 border border-amber-800/40 rounded-xl px-3 py-2 mb-4">
+                        <p className="text-xs text-amber-400 font-medium mb-1">Campos não encontrados:</p>
+                        {extracted.warnings.map((w) => <p key={w} className="text-xs text-amber-500">· {w}</p>)}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-3 mt-5">
+                      <button onClick={() => setEtapa('form')} className="py-3 rounded-xl border border-gray-700 text-gray-400 text-sm font-medium hover:border-gray-500 transition-all cursor-pointer">
+                        Voltar
+                      </button>
+                      <button onClick={handleApply} className="py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-all cursor-pointer">
+                        Aplicar
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             )}
           </div>
         </div>

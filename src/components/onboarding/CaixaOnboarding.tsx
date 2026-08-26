@@ -534,7 +534,7 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
                     ))}
                   </div>
 
-                  {extracted.raw.primeiraParcela && inputCacheRef.current && (
+                  {extracted.raw.primeiraParcela && (
                     <div className="mb-5">
                       <div className="flex justify-between items-end mb-2">
                         <span className="text-xs text-gray-400 font-medium">Saúde da Aprovação</span>
@@ -542,7 +542,8 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
                       </div>
                       <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden flex relative">
                         {(() => {
-                          const pct = Math.min(100, Math.max(0, (extracted.raw.primeiraParcela / (inputCacheRef.current.rendaNum * 0.3)) * 100))
+                          const rendaInformada = parseFloat(renda) || 1
+                          const pct = Math.min(100, Math.max(0, (extracted.raw.primeiraParcela / (rendaInformada * 0.3)) * 100))
                           let cor = 'bg-green-500'
                           let text = 'Muito provável de aprovar'
                           if (pct > 80) { cor = 'bg-yellow-500'; text = 'Próximo do limite da renda' }
