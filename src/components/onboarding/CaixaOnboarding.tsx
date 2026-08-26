@@ -1,4 +1,5 @@
 'use client'
+let nextToastId = 1;
 
 import { useEffect, useRef, useState } from 'react'
 import { Params, Sistema } from '@/lib/engine/types'
@@ -6,7 +7,7 @@ import { fetchEnquadramento, fetchSimulacao } from '@/lib/caixa/api'
 import { extractFromSimulacao } from '@/lib/caixa/extract'
 import { useLocalidade } from '@/lib/caixa/useLocalidade'
 import type { CaixaExtracted, CaixaProduto } from '@/lib/caixa/types'
-import { MapPinIcon, CheckCircleIcon, XIcon, ChevronRightIcon } from '@/components/ui/icons'
+import { MapPinIcon, CheckCircleIcon, XIcon } from '@/components/ui/icons'
 import { InputField } from '@/components/inputs/InputField'
 
 const CACHE_KEY = 'caixa_perfil'
@@ -31,7 +32,7 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
 
   // Enquadramento
   const [produtos, setProdutos] = useState<CaixaProduto[]>([])
-  const [selectedProduto, setSelectedProduto] = useState<CaixaProduto | null>(null)
+  const [, setSelectedProduto] = useState<CaixaProduto | null>(null)
   const inputCacheRef = useRef<{ rendaNum: number; valorImovelNum: number; valorEntradaNum: number; prazoNum: number; dataNascimentoAPI: string } | null>(null)
 
   // Toasts
@@ -39,7 +40,7 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
   const toastTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   function addToast(message: string) {
-    const id = Date.now()
+    const id = nextToastId++
     setToasts((prev) => [...prev, { id, message }])
     const timer = setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 5000)
     toastTimersRef.current.push(timer)
@@ -59,7 +60,7 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
   useEffect(() => {
     return () => {
       if (rateLimitRef.current) clearInterval(rateLimitRef.current)
-      toastTimersRef.current.forEach(clearTimeout)
+      const timers = toastTimersRef.current; timers.forEach(clearTimeout)
     }
   }, [])
 
