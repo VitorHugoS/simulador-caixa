@@ -16,6 +16,7 @@ interface Props {
   max?: number
   step?: number
   monetary?: boolean
+  hintText?: React.ReactNode
 }
 
 
@@ -37,6 +38,7 @@ export function InputField({
   min,
   max,
   monetary = false,
+  hintText,
 }: Props) {
   const id = useId()
   const [showTooltip, setShowTooltip] = useState(false)
@@ -186,6 +188,7 @@ export function InputField({
           <span className="px-3 text-gray-500 text-sm border-l border-gray-700 py-3 whitespace-nowrap">{suffix}</span>
         )}
       </div>
+      {hintText && <p className="text-[11px] text-gray-500 px-1 mt-0.5">{hintText}</p>}
     </div>
   )
 }
