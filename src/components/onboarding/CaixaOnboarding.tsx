@@ -20,6 +20,7 @@ type Etapa = 'form' | 'produtos' | 'preview'
 
 export function CaixaOnboarding({ onComplete, onSkip }: Props) {
   const [etapa, setEtapa] = useState<Etapa>('form')
+  const [formStep, setFormStep] = useState<1 | 2>(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [extracted, setExtracted] = useState<CaixaExtracted | null>(null)
@@ -110,19 +111,14 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
     }, 1000)
   }
 
-  async function handleBuscar() {
-    if (isRunningRef.current) return
+  function handleNextStep() {
     const rendaNum = parseFloat(renda)
     const valorImovelNum = parseFloat(valorImovel)
     const valorEntradaNum = parseFloat(valorEntrada)
     const prazoNum = parseInt(prazo)
 
-    if (!rendaNum || !valorImovelNum || !valorEntradaNum || !prazoNum || !dataNascimento) {
-      setError('Preencha todos os campos.')
-      return
-    }
-    if (!selectedUF || !selectedMunicipio) {
-      setError('Selecione o estado e a cidade do imóvel.')
+    if (!rendaNum || !valorImovelNum || !valorEntradaNum || !prazoNum) {
+      setError('Preencha os valores obrigatórios.')
       return
     }
     if (prazoNum > 420) {
@@ -134,6 +130,25 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
     if (valorEntradaNum < entradaMin) {
       const pct = sistema === 'sac' ? '20%' : '30%'
       setError(`Entrada mínima para ${sistema.toUpperCase()} é ${pct} do valor do imóvel (R$ ${entradaMin.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}).`)
+      return
+    }
+    setError(null)
+    setFormStep(2)
+  }
+
+  async function handleBuscar() {
+    if (isRunningRef.current) return
+    const rendaNum = parseFloat(renda)
+    const valorImovelNum = parseFloat(valorImovel)
+    const valorEntradaNum = parseFloat(valorEntrada)
+    const prazoNum = parseInt(prazo)
+
+    if (!dataNascimento) {
+      setError('Preencha a data de nascimento.')
+      return
+    }
+    if (!selectedUF || !selectedMunicipio) {
+      setError('Selecione o estado e a cidade do imóvel.')
       return
     }
 
@@ -284,119 +299,145 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
           {/* ── Etapa: formulário ── */}
           {etapa === 'form' && (
             <>
-              <div className="mb-5">
-                <h2 className="text-white font-semibold text-lg">Buscar simulação da Caixa</h2>
-                <p className="text-xs text-gray-500 mt-0.5">Consulta direta à API oficial do Simulador Habitacional</p>
+              <div className="mb-5 flex items-center justify-between">
+                <div>
+                  <h2 className="text-white font-semibold text-lg">
+                    {formStep === 1 ? 'Valores da simulação' : 'Detalhes do imóvel'}
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-0.5">Consulta direta à API oficial do Simulador Habitacional</p>
+                </div>
+                {/* Stepper dots */}
+                <div className="flex gap-1.5">
+                  <div className={`w-2 h-2 rounded-full transition-colors ${formStep === 1 ? 'bg-blue-500' : 'bg-gray-700'}`} />
+                  <div className={`w-2 h-2 rounded-full transition-colors ${formStep === 2 ? 'bg-blue-500' : 'bg-gray-700'}`} />
+                </div>
               </div>
 
-              <div className="flex flex-col gap-3 mb-4">
-                <InputField label="Renda bruta familiar mensal" value={renda} onChange={setRenda} prefix="R$" placeholder="9.000" monetary />
-                <InputField label="Valor aproximado do imóvel" value={valorImovel} onChange={setValorImovel} prefix="R$" placeholder="260.000" monetary />
-                <InputField label="Valor de entrada" value={valorEntrada} onChange={(v) => { setEntradaTocada(true); setValorEntrada(v) }} prefix="R$" placeholder="80.000" monetary />
+              {formStep === 1 && (
+                <div className="flex flex-col gap-3 mb-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                  <InputField label="Renda bruta familiar mensal" value={renda} onChange={setRenda} prefix="R$" placeholder="9.000" monetary />
+                  <InputField label="Valor aproximado do imóvel" value={valorImovel} onChange={setValorImovel} prefix="R$" placeholder="260.000" monetary />
+                  <InputField label="Valor de entrada" value={valorEntrada} onChange={(v) => { setEntradaTocada(true); setValorEntrada(v) }} prefix="R$" placeholder="80.000" monetary />
 
-                {/* Estado */}
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm text-gray-300 font-medium">Estado (UF)</label>
-                    {geoAvailable && geoStatus === 'idle' && (
-                      <button onClick={requestGeo} className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors cursor-pointer">
-                        <MapPinIcon className="w-3.5 h-3.5" /> Detectar localização
-                      </button>
-                    )}
-                    {geoStatus === 'detecting' && <span className="text-xs text-blue-400 animate-pulse">Detectando…</span>}
-                    {geoStatus === 'done' && <span className="inline-flex items-center gap-1 text-xs text-green-500"><CheckCircleIcon className="w-3.5 h-3.5" /> Localização detectada</span>}
-                    {geoStatus === 'denied' && <span className="text-xs text-red-400">Localização negada</span>}
-                  </div>
-                  <select value={selectedUF?.sgUf ?? ''} onChange={(e) => setSelectedUF(ufs.find((u) => u.sgUf === e.target.value) ?? null)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors">
-                    <option value="">Selecione um estado</option>
-                    {ufs.map((uf) => <option key={uf.sgUf} value={uf.sgUf}>{uf.noUf} ({uf.sgUf})</option>)}
-                  </select>
-                </div>
-
-                {/* Cidade */}
-                <div className="flex flex-col gap-1">
-                  <label className="text-sm text-gray-300 font-medium">Cidade</label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={selectedMunicipio ? selectedMunicipio.nome : municipioSearch}
-                      onChange={(e) => {
-                        if (selectedMunicipio) setSelectedMunicipio(null)
-                        setMunicipioSearch(e.target.value)
-                      }}
-                      onFocus={(e) => e.target.select()}
-                      placeholder={!selectedUF ? 'Selecione um estado primeiro' : municipiosLoading ? 'Carregando…' : 'Buscar cidade…'}
-                      disabled={!selectedUF || municipiosLoading}
-                      className={`w-full bg-gray-800 border rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors placeholder-gray-600 disabled:opacity-50 disabled:cursor-not-allowed ${selectedMunicipio ? 'border-blue-500/50 bg-blue-900/10 pr-10' : 'border-gray-700'}`}
-                    />
-                    {selectedMunicipio && (
-                      <button
-                        onClick={() => { setSelectedMunicipio(null); setMunicipioSearch('') }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 transition-all cursor-pointer"
-                        title="Limpar cidade"
-                      >
-                        <XIcon className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                    {!selectedMunicipio && municipioSearch && municipiosFiltrados.length > 0 && (
-                      <div className="absolute top-full mt-1 left-0 right-0 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-20 max-h-44 overflow-y-auto">
-                        {municipiosFiltrados.map((m) => (
-                          <button key={m.codigo} onClick={() => { setSelectedMunicipio(m); setMunicipioSearch('') }} className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors first:rounded-t-xl last:rounded-b-xl">{m.nome}</button>
+                  <div className="grid grid-cols-2 gap-3">
+                    <InputField label="Prazo" value={prazo} onChange={setPrazo} suffix="meses" placeholder="360" min={12} max={420} step={12} />
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm text-gray-300 font-medium">Sistema</label>
+                      <div className="flex gap-1 bg-gray-800 rounded-xl p-1">
+                        {(['sac', 'price'] as Sistema[]).map((s) => (
+                          <button key={s} onClick={() => setSistema(s)} className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${sistema === s ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}>
+                            {s === 'sac' ? 'SAC' : 'Price'}
+                          </button>
                         ))}
                       </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-sm text-gray-300 font-medium">Data de nascimento</label>
-                  <input type="date" value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors" />
-                </div>
-
-                {/* Tipo + Categoria */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-sm text-gray-300 font-medium">Tipo</label>
-                    <select value={tipoFinanciamento} onChange={(e) => setTipoFinanciamento(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors">
-                      <option value="1">Residencial</option>
-                      <option value="2">Comercial</option>
-                      <option value="5">Rural</option>
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-sm text-gray-300 font-medium">Imóvel</label>
-                    <select value={categoriaImovel} onChange={(e) => setCategoriaImovel(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors">
-                      <option value="1">Novo</option>
-                      <option value="4">Usado</option>
-                      <option value="6">Terreno</option>
-                      <option value="2">Construção</option>
-                      <option value="3">Reforma/Ampliação</option>
-                      <option value="7">Garantia (Home Equity)</option>
-                      <option value="11">Imóveis CAIXA</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <InputField label="Prazo" value={prazo} onChange={setPrazo} suffix="meses" placeholder="360" min={12} max={420} step={12} />
-                  <div className="flex flex-col gap-1">
-                    <label className="text-sm text-gray-300 font-medium">Sistema</label>
-                    <div className="flex gap-1 bg-gray-800 rounded-xl p-1">
-                      {(['sac', 'price'] as Sistema[]).map((s) => (
-                        <button key={s} onClick={() => setSistema(s)} className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${sistema === s ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-white'}`}>
-                          {s === 'sac' ? 'SAC' : 'Price'}
-                        </button>
-                      ))}
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {formStep === 2 && (
+                <div className="flex flex-col gap-3 mb-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                  {/* Estado */}
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm text-gray-300 font-medium">Estado (UF)</label>
+                      {geoAvailable && geoStatus === 'idle' && (
+                        <button onClick={requestGeo} className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors cursor-pointer">
+                          <MapPinIcon className="w-3.5 h-3.5" /> Detectar localização
+                        </button>
+                      )}
+                      {geoStatus === 'detecting' && <span className="text-xs text-blue-400 animate-pulse">Detectando…</span>}
+                      {geoStatus === 'done' && <span className="inline-flex items-center gap-1 text-xs text-green-500"><CheckCircleIcon className="w-3.5 h-3.5" /> Localização detectada</span>}
+                      {geoStatus === 'denied' && <span className="text-xs text-red-400">Localização negada</span>}
+                    </div>
+                    <select value={selectedUF?.sgUf ?? ''} onChange={(e) => setSelectedUF(ufs.find((u) => u.sgUf === e.target.value) ?? null)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors">
+                      <option value="">Selecione um estado</option>
+                      {ufs.map((uf) => <option key={uf.sgUf} value={uf.sgUf}>{uf.noUf} ({uf.sgUf})</option>)}
+                    </select>
+                  </div>
+
+                  {/* Cidade */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm text-gray-300 font-medium">Cidade</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={selectedMunicipio ? selectedMunicipio.nome : municipioSearch}
+                        onChange={(e) => {
+                          if (selectedMunicipio) setSelectedMunicipio(null)
+                          setMunicipioSearch(e.target.value)
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        placeholder={!selectedUF ? 'Selecione um estado primeiro' : municipiosLoading ? 'Carregando…' : 'Buscar cidade…'}
+                        disabled={!selectedUF || municipiosLoading}
+                        className={`w-full bg-gray-800 border rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors placeholder-gray-600 disabled:opacity-50 disabled:cursor-not-allowed ${selectedMunicipio ? 'border-blue-500/50 bg-blue-900/10 pr-10' : 'border-gray-700'}`}
+                      />
+                      {selectedMunicipio && (
+                        <button
+                          onClick={() => { setSelectedMunicipio(null); setMunicipioSearch('') }}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 transition-all cursor-pointer"
+                          title="Limpar cidade"
+                        >
+                          <XIcon className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {!selectedMunicipio && municipioSearch && municipiosFiltrados.length > 0 && (
+                        <div className="absolute top-full mt-1 left-0 right-0 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-20 max-h-44 overflow-y-auto">
+                          {municipiosFiltrados.map((m) => (
+                            <button key={m.codigo} onClick={() => { setSelectedMunicipio(m); setMunicipioSearch('') }} className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors first:rounded-t-xl last:rounded-b-xl">{m.nome}</button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm text-gray-300 font-medium">Data de nascimento</label>
+                    <input type="date" value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors" />
+                  </div>
+
+                  {/* Tipo + Categoria */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm text-gray-300 font-medium">Tipo</label>
+                      <select value={tipoFinanciamento} onChange={(e) => setTipoFinanciamento(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors">
+                        <option value="1">Residencial</option>
+                        <option value="2">Comercial</option>
+                        <option value="5">Rural</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm text-gray-300 font-medium">Imóvel</label>
+                      <select value={categoriaImovel} onChange={(e) => setCategoriaImovel(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors">
+                        <option value="1">Novo</option>
+                        <option value="4">Usado</option>
+                        <option value="6">Terreno</option>
+                        <option value="2">Construção</option>
+                        <option value="3">Reforma/Ampliação</option>
+                        <option value="7">Garantia (Home Equity)</option>
+                        <option value="11">Imóveis CAIXA</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
 
-              <button onClick={handleBuscar} disabled={loading || rateLimitSecondsLeft > 0} className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold transition-all cursor-pointer">
-                {loading ? 'Buscando…' : rateLimitSecondsLeft > 0 ? `Aguarde ${rateLimitSecondsLeft}s` : 'Buscar simulação'}
-              </button>
+              {formStep === 1 ? (
+                <button onClick={handleNextStep} className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-all cursor-pointer">
+                  Próximo passo
+                </button>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <button onClick={() => setFormStep(1)} className="py-3 rounded-xl border border-gray-700 text-gray-400 text-sm font-medium hover:border-gray-500 transition-all cursor-pointer">
+                    Voltar
+                  </button>
+                  <button onClick={handleBuscar} disabled={loading || rateLimitSecondsLeft > 0} className="py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold transition-all cursor-pointer">
+                    {loading ? 'Buscando…' : rateLimitSecondsLeft > 0 ? `Aguarde ${rateLimitSecondsLeft}s` : 'Buscar simulação'}
+                  </button>
+                </div>
+              )}
             </>
           )}
 
