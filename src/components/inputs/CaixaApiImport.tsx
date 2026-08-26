@@ -417,35 +417,47 @@ export function CaixaApiImport({ state, dispatch }: Props) {
                 </div>
 
                 {formStep === 1 && (
-                  <div className="flex flex-col gap-3 mb-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                    <InputField 
-                      label="Renda bruta familiar mensal" 
-                      value={renda} 
-                      onChange={setRenda} 
-                      prefix="R$" 
-                      placeholder="9.000" 
-                      monetary 
-                      hintText={
-                        renda && parseFloat(renda) > 0 
-                          ? <span className="text-green-500/80">Comprometimento de 30%: parcela máxima de R$ {(parseFloat(renda) * 0.3).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>
-                          : 'A parcela não pode ultrapassar 30% da sua renda'
-                      }
-                    />
-                    <InputField 
-                      label="Valor aproximado do imóvel" 
-                      value={valorImovel} 
-                      onChange={setValorImovel} 
-                      prefix="R$" 
-                      placeholder="260.000" 
-                      monetary 
-                      hintText={
-                        valorImovel && parseFloat(valorImovel) > 0
-                          ? `Entrada mínima sugerida: R$ ${(parseFloat(valorImovel) * (sistema === 'sac' ? 0.2 : 0.3)).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} (${sistema.toUpperCase()})`
-                          : 'A Caixa financia até 80% (SAC) ou 70% (Price) do imóvel'
-                      }
-                    />
-                    <InputField label="Valor de entrada" value={valorEntrada} onChange={(v) => { setEntradaTocada(true); setValorEntrada(v) }} prefix="R$" placeholder="80.000" monetary />
+                  <div className="flex flex-col gap-4 mb-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                    
+                    {/* Linha 1: Renda e Parcela Máxima */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <InputField 
+                        label="Renda bruta familiar" 
+                        value={renda} 
+                        onChange={setRenda} 
+                        prefix="R$" 
+                        placeholder="9.000" 
+                        monetary 
+                      />
+                      <div className="flex flex-col gap-1">
+                        <label className="text-sm text-gray-300 font-medium">Parcela máxima (30%)</label>
+                        <div className="flex items-center bg-gray-900/50 border border-gray-700/50 rounded-xl px-3 py-3 text-green-400 text-sm font-medium">
+                          {renda && parseFloat(renda) > 0 
+                            ? `R$ ${(parseFloat(renda) * 0.3).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
+                            : 'R$ 0'}
+                        </div>
+                      </div>
+                    </div>
 
+                    {/* Linha 2: Imóvel e Entrada */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <InputField 
+                        label="Valor aproximado do imóvel" 
+                        value={valorImovel} 
+                        onChange={setValorImovel} 
+                        prefix="R$" 
+                        placeholder="260.000" 
+                        monetary 
+                        hintText={
+                          valorImovel && parseFloat(valorImovel) > 0
+                            ? `Entrada mínima sugerida: R$ ${(parseFloat(valorImovel) * (sistema === 'sac' ? 0.2 : 0.3)).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} (${sistema.toUpperCase()})`
+                            : undefined
+                        }
+                      />
+                      <InputField label="Valor de entrada" value={valorEntrada} onChange={(v) => { setEntradaTocada(true); setValorEntrada(v) }} prefix="R$" placeholder="80.000" monetary />
+                    </div>
+
+                    {/* Linha 3: Prazo e Sistema */}
                     <div className="grid grid-cols-2 gap-3">
                       <InputField label="Prazo" value={prazo} onChange={setPrazo} suffix="meses" placeholder="360" min={12} max={420} step={12} />
                       <div className="flex flex-col gap-1">
