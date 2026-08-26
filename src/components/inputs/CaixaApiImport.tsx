@@ -146,6 +146,8 @@ export function CaixaApiImport({ state, dispatch }: Props) {
     if (isRunningRef.current) return // guard contra duplo clique
     const rendaNum = parseFloat(renda)
     const valorImovelNum = parseFloat(valorImovel)
+    const valorEntradaNum = parseFloat(valorEntrada)
+    const prazoNum = parseInt(prazo)
 
     if (!dataNascimento) {
       setError('Preencha a data de nascimento.')
