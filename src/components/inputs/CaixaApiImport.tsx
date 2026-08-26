@@ -235,6 +235,7 @@ export function CaixaApiImport({ state, dispatch }: Props) {
         setExtracted(result)
         setEtapa('preview')
         setLoading(false)
+        isRunningRef.current = false
         return // sucesso — sai do loop
       } catch (e) {
         console.error(`Produto "${nome}" falhou:`, e)
