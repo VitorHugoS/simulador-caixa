@@ -323,15 +323,17 @@ export function CaixaApiImport({ state, dispatch }: Props) {
       </div>
 
       {/* FAB fixo — sempre visível independente do scroll */}
-      <button
-        onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-sm font-medium px-4 py-3 rounded-2xl shadow-lg shadow-blue-900/40 transition-all duration-200 cursor-pointer"
-        aria-label="Simular pela Caixa"
-      >
-        <BuildingIcon className="w-4 h-4 flex-shrink-0" />
-        <span className="hidden sm:inline">Simular pela Caixa</span>
-        <span className="sm:hidden">Caixa</span>
-      </button>
+      {!open && (
+        <button
+          onClick={() => setOpen(true)}
+          className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] end-6 z-40 flex items-center gap-2 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white text-sm font-medium px-4 py-3 rounded-2xl shadow-lg shadow-blue-900/40 transition-all duration-200 cursor-pointer"
+          aria-label="Simular pela Caixa"
+        >
+          <BuildingIcon className="w-4 h-4 flex-shrink-0" />
+          <span className="hidden sm:inline">Simular pela Caixa</span>
+          <span className="sm:hidden">Caixa</span>
+        </button>
+      )}
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -432,7 +434,7 @@ export function CaixaApiImport({ state, dispatch }: Props) {
                       />
                       <div className="flex flex-col gap-1">
                         <label className="text-sm text-gray-300 font-medium">Parcela máxima (30%)</label>
-                        <div className="flex items-center bg-gray-900/50 border border-gray-700/50 rounded-xl px-3 py-3 text-green-400 text-sm font-medium">
+                        <div aria-live="polite" className="flex items-center bg-gray-900/50 border border-gray-700/50 rounded-xl px-3 py-3 text-green-400 text-sm font-medium">
                           {renda && parseFloat(renda) > 0 
                             ? `R$ ${(parseFloat(renda) * 0.3).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
                             : 'R$ 0'}
@@ -519,19 +521,19 @@ export function CaixaApiImport({ state, dispatch }: Props) {
                           onFocus={(e) => e.target.select()}
                           placeholder={!selectedUF ? 'Selecione um estado primeiro' : municipiosLoading ? 'Carregando…' : 'Buscar cidade…'}
                           disabled={!selectedUF || municipiosLoading}
-                          className={`w-full bg-gray-800 border rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors placeholder-gray-600 disabled:opacity-50 disabled:cursor-not-allowed ${selectedMunicipio ? 'border-blue-500/50 bg-blue-900/10 pr-10' : 'border-gray-700'}`}
+                          className={`w-full bg-gray-800 border rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors placeholder-gray-600 disabled:opacity-50 disabled:cursor-not-allowed ${selectedMunicipio ? 'border-blue-500/50 bg-blue-900/10 pe-10' : 'border-gray-700'}`}
                         />
                         {selectedMunicipio && (
                           <button
                             onClick={() => { setSelectedMunicipio(null); setMunicipioSearch('') }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 transition-all cursor-pointer"
+                            className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 transition-all cursor-pointer"
                             title="Limpar cidade"
                           >
                             <XIcon className="w-3.5 h-3.5" />
                           </button>
                         )}
                         {!selectedMunicipio && municipioSearch && municipiosFiltrados.length > 0 && (
-                          <div className="absolute top-full mt-1 left-0 right-0 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-20 max-h-44 overflow-y-auto">
+                          <div className="absolute top-full mt-1 inset-x-0 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-20 max-h-44 overflow-y-auto">
                             {municipiosFiltrados.map((m) => (
                               <button
                                 key={m.codigo}

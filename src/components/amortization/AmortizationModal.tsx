@@ -85,12 +85,12 @@ export function AmortizationModal({ state, onApply, onClose, isSACTransform = fa
         </div>
       )}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-gray-900 border border-gray-800 rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-gray-900 border border-gray-800 rounded-t-[36px] sm:rounded-[36px] w-full sm:max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-white font-semibold text-lg">
             {isSACTransform ? 'Transformar Price em SAC' : 'Adicionar amortização'}
           </h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-all cursor-pointer"><XIcon className="w-4 h-4" /></button>
+          <button aria-label="Fechar modal" onClick={onClose} className="p-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-all cursor-pointer"><XIcon aria-hidden="true" className="w-4 h-4" /></button>
         </div>
 
         {!isSACTransform && (
@@ -146,10 +146,10 @@ export function AmortizationModal({ state, onApply, onClose, isSACTransform = fa
             </div>
 
             <div>
-              <label className="text-xs text-gray-400 mb-1 block">Efeito no contrato</label>
-              <div className="grid grid-cols-2 gap-2">
+              <label id="efeito-label" className="text-xs text-gray-400 mb-1 block">Efeito no contrato</label>
+              <div role="radiogroup" aria-labelledby="efeito-label" className="grid grid-cols-2 gap-2">
                 {(['reduzir_prazo', 'reduzir_parcela'] as EfeitoAporte[]).map((e) => (
-                  <button key={e} onClick={() => setEfeito(e)}
+                  <button key={e} role="radio" aria-checked={efeito === e} onClick={() => setEfeito(e)}
                     className={`py-2.5 rounded-xl text-xs font-medium border transition-all ${
                       efeito === e ? 'bg-blue-600 border-blue-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-400'
                     }`}>
@@ -165,12 +165,15 @@ export function AmortizationModal({ state, onApply, onClose, isSACTransform = fa
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <button
+                  role="switch"
+                  aria-checked={fgts}
+                  aria-label="Usar FGTS"
                   onClick={toggleFgts}
                   className={`w-9 h-5 rounded-full transition-all relative ${fgts ? 'bg-emerald-500' : 'bg-gray-700'}`}
                 >
                   <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${fgts ? 'left-4' : 'left-0.5'}`} />
                 </button>
-                <span className="text-sm text-gray-300">Usar FGTS</span>
+                <span className="text-sm text-gray-300" aria-hidden="true">Usar FGTS</span>
               </div>
               {fgtsAcumulado > 0 && (
                 <span className="text-xs text-gray-500">
@@ -220,13 +223,13 @@ export function AmortizationModal({ state, onApply, onClose, isSACTransform = fa
 
         <div className="grid grid-cols-2 gap-3">
           <button onClick={onClose}
-            className="py-3 rounded-xl border border-gray-700 text-gray-400 text-sm font-medium hover:border-gray-500 transition-all">
+            className="py-3 rounded-xl border border-gray-700 text-gray-400 text-sm font-medium hover:border-gray-500 transition-colors active:scale-[0.96]">
             Cancelar
           </button>
           <button
             onClick={() => { if (podeSalvar) { onApply(novosEventos); onClose() } }}
             disabled={!podeSalvar}
-            className="py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-600 text-white text-sm font-medium transition-all">
+            className="py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-600 text-white text-sm font-medium transition-colors active:scale-[0.96] disabled:active:scale-100">
             Aplicar
           </button>
         </div>

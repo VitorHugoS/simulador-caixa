@@ -15,6 +15,8 @@ import { AmortizationModal } from '@/components/amortization/AmortizationModal'
 import { AmortTable } from '@/components/table/AmortTable'
 import { RowDetailModal } from '@/components/table/RowDetailModal'
 
+import { HeroSummary } from '@/components/kpis/HeroSummary'
+
 export function SimulatorClient() {
   const { state, dispatch, hasUrlState } = useUrlState()
   const result = useSimulator(state)
@@ -71,23 +73,37 @@ export function SimulatorClient() {
 
   return (
     <div className="min-h-screen bg-gray-950">
-      {/* Header */}
+      {/* Header Sticky com nome e link */}
       <div className="sticky top-0 z-40 bg-gray-950 border-b border-gray-800">
-        <div className="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 min-h-[3rem] py-2 flex flex-wrap items-center justify-between gap-2">
           <span className="text-white font-bold text-sm">FinanSim</span>
           <button
             onClick={copyLink}
-            className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white transition-all cursor-pointer"
+            className="inline-flex items-center justify-center min-w-[120px] gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white transition-colors active:scale-[0.96] cursor-pointer"
           >
-            {copied
-              ? <><CheckIcon className="w-3.5 h-3.5 text-green-400" /> <span className="text-green-400">Copiado!</span></>
-              : <><LinkIcon className="w-3.5 h-3.5" /> Compartilhar</>
-            }
+            <div className="relative w-3.5 h-3.5">
+              <CheckIcon 
+                className={`absolute inset-0 text-green-400 transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] ${copied ? 'opacity-100 scale-100 blur-0' : 'opacity-0 scale-50 blur-[4px]'}`} 
+              />
+              <LinkIcon 
+                className={`absolute inset-0 transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] ${copied ? 'opacity-0 scale-50 blur-[4px]' : 'opacity-100 scale-100 blur-0'}`} 
+              />
+            </div>
+            <span className="relative">
+              <span className={`block transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] ${copied ? 'opacity-100 translate-y-0 text-green-400' : 'opacity-0 absolute inset-0 translate-y-2'}`} aria-hidden={!copied}>
+                Copiado!
+              </span>
+              <span className={`block transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] ${copied ? 'opacity-0 absolute inset-0 -translate-y-2' : 'opacity-100 translate-y-0'}`} aria-hidden={copied}>
+                Compartilhar
+              </span>
+            </span>
           </button>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-5 flex flex-col gap-5">
+        <HeroSummary state={state} result={result} />
+        
         <InputPanel
           state={state}
           dispatch={dispatch}
