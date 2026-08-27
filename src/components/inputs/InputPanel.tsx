@@ -57,7 +57,7 @@ export function InputPanel({ state, dispatch }: Props) {
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between p-5 hover:bg-gray-800 transition-colors active:scale-[0.98]"
       >
-        <span className="text-white font-semibold">Detalhes do financiamento</span>
+        <span className="text-white font-semibold">Alterar dados do contrato</span>
         <ChevronDownIcon strokeWidth={2} className={`w-5 h-5 text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 

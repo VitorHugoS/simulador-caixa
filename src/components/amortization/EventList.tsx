@@ -59,7 +59,7 @@ export function EventList({
 
       <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800 flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-white font-semibold text-sm">Aportes extras</h3>
+          <h3 className="text-white font-semibold text-sm">Simular amortizações extras</h3>
         <div className="flex gap-2">
           {hasEventos && (
             <button

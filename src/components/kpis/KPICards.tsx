@@ -94,7 +94,7 @@ export function KPICards({ result, hasEvents, prazoContratado }: Props) {
   ]
 
   return (
-    <div className="bg-gray-900 rounded-[28px] border border-gray-800 overflow-hidden">
+    <div className="w-full">
       <div className="overflow-x-auto">
         <div className="min-w-[340px] sm:min-w-full">
           {/* Header */}

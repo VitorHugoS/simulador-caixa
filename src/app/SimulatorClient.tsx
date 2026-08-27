@@ -108,18 +108,23 @@ export function SimulatorClient() {
           state={state}
           dispatch={dispatch}
         />
-        <KPICards
-          result={result}
-          hasEvents={state.eventos.length > 0 || state.params.fgtsDeposito > 0}
-          sistema={state.params.sistema}
-          prazoContratado={state.params.n}
-        />
+        {/* Análise Comparativa Integrada */}
+        <div className="bg-gray-900 rounded-[28px] border border-gray-800 overflow-hidden flex flex-col">
+          <BalanceChart
+            result={result}
+            hasEvents={state.eventos.length > 0 || state.params.fgtsDeposito > 0}
+          />
+          <div className="border-t border-gray-800 bg-gray-900/50">
+            <KPICards
+              result={result}
+              hasEvents={state.eventos.length > 0 || state.params.fgtsDeposito > 0}
+              sistema={state.params.sistema}
+              prazoContratado={state.params.n}
+            />
+          </div>
+        </div>
 
-        {/* Gráficos */}
-        <BalanceChart
-          result={result}
-          hasEvents={state.eventos.length > 0 || state.params.fgtsDeposito > 0}
-        />
+        {/* Composição da Parcela */}
         <PaymentChart result={result} />
 
         {/* Aportes */}
