@@ -71,9 +71,9 @@ export function SimulatorClient() {
 
   return (
     <div className="min-h-screen bg-gray-950">
-      {/* Header */}
+      {/* Header Sticky com nome e link */}
       <div className="sticky top-0 z-40 bg-gray-950 border-b border-gray-800">
-        <div className="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 min-h-[3rem] py-2 flex flex-wrap items-center justify-between gap-2">
           <span className="text-white font-bold text-sm">FinanSim</span>
           <button
             onClick={copyLink}

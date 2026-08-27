@@ -408,19 +408,19 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
                         onFocus={(e) => e.target.select()}
                         placeholder={!selectedUF ? 'Selecione um estado primeiro' : municipiosLoading ? 'Carregando…' : 'Buscar cidade…'}
                         disabled={!selectedUF || municipiosLoading}
-                        className={`w-full bg-gray-800 border rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors placeholder-gray-600 disabled:opacity-50 disabled:cursor-not-allowed ${selectedMunicipio ? 'border-blue-500/50 bg-blue-900/10 pr-10' : 'border-gray-700'}`}
+                        className={`w-full bg-gray-800 border rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500 transition-colors placeholder-gray-600 disabled:opacity-50 disabled:cursor-not-allowed ${selectedMunicipio ? 'border-blue-500/50 bg-blue-900/10 pe-10' : 'border-gray-700'}`}
                       />
                       {selectedMunicipio && (
                         <button
                           onClick={() => { setSelectedMunicipio(null); setMunicipioSearch('') }}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 transition-all cursor-pointer"
+                          className="absolute end-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 transition-all cursor-pointer"
                           title="Limpar cidade"
                         >
                           <XIcon className="w-3.5 h-3.5" />
                         </button>
                       )}
                       {!selectedMunicipio && municipioSearch && municipiosFiltrados.length > 0 && (
-                        <div className="absolute top-full mt-1 left-0 right-0 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-20 max-h-44 overflow-y-auto">
+                        <div className="absolute top-full mt-1 inset-x-0 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-20 max-h-44 overflow-y-auto">
                           {municipiosFiltrados.map((m) => (
                             <button key={m.codigo} onClick={() => { setSelectedMunicipio(m); setMunicipioSearch('') }} className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors first:rounded-t-xl last:rounded-b-xl">{m.nome}</button>
                           ))}
@@ -486,7 +486,7 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
                 <h2 className="text-white font-semibold text-lg">Enquadramentos</h2>
                 <p className="text-xs text-gray-500 mt-0.5">Escolha o produto da Caixa para importar</p>
               </div>
-              <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1">
+              <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pe-1">
                 {produtos.map((p) => (
                   <button
                     key={p.codigo}

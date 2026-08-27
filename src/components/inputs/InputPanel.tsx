@@ -50,10 +50,10 @@ export function InputPanel({ state, dispatch }: Props) {
     <div className="bg-gray-900 rounded-[28px] border border-gray-800">
       {/* Linha principal de parâmetros */}
       <div className="p-4">
-        {/* Mobile: coluna / Desktop: linha */}
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:gap-3 lg:flex-wrap">
+        {/* Fluid flex grid for inputs */}
+        <div className="flex flex-wrap items-end gap-3">
 
-          <div className="lg:w-40 xl:w-48">
+          <div className="flex-1 min-w-[180px] lg:max-w-[220px]">
             <InputField
               label="Valor financiado"
               tooltip="Montante pedido ao banco (PV). Não inclui a entrada."
@@ -65,7 +65,7 @@ export function InputPanel({ state, dispatch }: Props) {
             />
           </div>
 
-          <div className="lg:w-28">
+          <div className="flex-1 min-w-[120px] lg:max-w-[140px]">
             <InputField
               label="Prazo"
               tooltip="Duração total em meses. 360 meses = 30 anos."
@@ -79,7 +79,7 @@ export function InputPanel({ state, dispatch }: Props) {
             />
           </div>
 
-          <div className="lg:w-36">
+          <div className="flex-1 min-w-[130px] lg:max-w-[160px]">
             <InputField
               label="Taxa anual"
               tooltip="Taxa efetiva anual informada no contrato."
@@ -93,7 +93,7 @@ export function InputPanel({ state, dispatch }: Props) {
             />
           </div>
 
-          <div className="lg:w-32">
+          <div className="flex-1 min-w-[130px] lg:max-w-[150px]">
             <InputField
               label="Correção (TR)"
               tooltip="Taxa Referencial anual projetada. Contratos SAC/TR e PRICE/TR da Caixa corrigem o saldo todo mês por este índice. Bancos e o CET sempre usam 0%. Histórico: 2022 ≈ 1,4%, 2023 ≈ 1,9%, 2024 ≈ 1,4%."
@@ -107,7 +107,7 @@ export function InputPanel({ state, dispatch }: Props) {
             />
           </div>
 
-          <div className="lg:w-28">
+          <div className="flex-1 min-w-[130px] lg:max-w-[140px]">
             <InputField
               label="DFI + admin"
               tooltip="Seguro DFI + taxa de administração mensal (valores fixos do contrato)."
@@ -119,7 +119,7 @@ export function InputPanel({ state, dispatch }: Props) {
             />
           </div>
 
-          <div className="lg:w-32">
+          <div className="flex-1 min-w-[130px] lg:max-w-[150px]">
             <InputField
               label="MIP mensal"
               tooltip="Taxa MIP = % do saldo devedor por mês. Calcule: MIP da 1ª parcela ÷ Saldo devedor. Ex: R$20,87 ÷ R$180.000 = 0,01159%."
@@ -133,7 +133,7 @@ export function InputPanel({ state, dispatch }: Props) {
           </div>
 
           {/* Sistema toggle */}
-          <div className="flex flex-col gap-1">
+          <div className="flex-1 min-w-[160px] flex flex-col gap-1">
             <label id="sistema-label" className="text-sm text-gray-300 font-medium">Sistema</label>
             <div role="radiogroup" aria-labelledby="sistema-label" className="flex gap-1 bg-gray-800 rounded-xl p-1">
               {(['sac', 'price'] as Sistema[]).map((s) => (
