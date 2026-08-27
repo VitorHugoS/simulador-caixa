@@ -15,6 +15,8 @@ import { AmortizationModal } from '@/components/amortization/AmortizationModal'
 import { AmortTable } from '@/components/table/AmortTable'
 import { RowDetailModal } from '@/components/table/RowDetailModal'
 
+import { HeroSummary } from '@/components/kpis/HeroSummary'
+
 export function SimulatorClient() {
   const { state, dispatch, hasUrlState } = useUrlState()
   const result = useSimulator(state)
@@ -100,6 +102,8 @@ export function SimulatorClient() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-5 flex flex-col gap-5">
+        <HeroSummary state={state} result={result} />
+        
         <InputPanel
           state={state}
           dispatch={dispatch}
