@@ -328,14 +328,14 @@ export function CaixaOnboarding({ onComplete, onSkip }: Props) {
                       placeholder="9.000" 
                       monetary 
                     />
-                    <div className="flex flex-col gap-1">
-                      <label className="text-sm text-gray-300 font-medium">Parcela máxima (30%)</label>
-                      <div className="flex items-center bg-gray-900/50 border border-gray-700/50 rounded-xl px-3 py-3 text-green-400 text-sm font-medium">
-                        {renda && parseFloat(renda) > 0 
-                          ? `R$ ${(parseFloat(renda) * 0.3).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
-                          : 'R$ 0'}
+                      <div className="flex flex-col gap-1">
+                        <label className="text-sm text-gray-300 font-medium">Parcela máxima (30%)</label>
+                        <div aria-live="polite" className="flex items-center bg-gray-900/50 border border-gray-700/50 rounded-xl px-3 py-3 text-green-400 text-sm font-medium">
+                          {renda && parseFloat(renda) > 0 
+                            ? `R$ ${(parseFloat(renda) * 0.3).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
+                            : 'R$ 0'}
+                        </div>
                       </div>
-                    </div>
                   </div>
 
                   {/* Linha 2: Imóvel e Entrada */}

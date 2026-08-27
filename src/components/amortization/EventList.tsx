@@ -136,10 +136,11 @@ export function EventList({
               </p>
             </div>
             <button
+              aria-label="Remover aporte"
               onClick={() => isTemplate ? onRemoveEvento(primeiro.id) : onRemoveGrupo(gId)}
               className="p-1.5 rounded-lg text-gray-600 hover:text-red-400 hover:bg-gray-700 transition-all cursor-pointer ml-2 flex-shrink-0"
             >
-              <XIcon className="w-4 h-4" />
+              <XIcon aria-hidden="true" className="w-4 h-4" />
             </button>
           </div>
         )
@@ -158,10 +159,11 @@ export function EventList({
             </p>
           </div>
           <button
+            aria-label="Remover aporte individual"
             onClick={() => onRemoveEvento(ev.id)}
             className="text-gray-600 hover:text-red-400 transition-colors ml-3 text-lg leading-none"
           >
-            ×
+            <span aria-hidden="true">×</span>
           </button>
         </div>
         ))}

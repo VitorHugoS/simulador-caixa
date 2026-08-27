@@ -51,13 +51,14 @@ export function AmortTable({ serie, showCorrecao = false, onRowClick }: Props) {
   return (
     <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
       <button
+        aria-expanded={open}
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-800 transition-colors"
       >
         <span className="text-sm font-semibold text-white">
           Tabela mês a mês ({serie.length} meses)
         </span>
-        {open ? <ChevronUpIcon className="w-4 h-4 text-gray-500" /> : <ChevronDownIcon className="w-4 h-4 text-gray-500" />}
+        {open ? <ChevronUpIcon aria-hidden="true" className="w-4 h-4 text-gray-500" /> : <ChevronDownIcon aria-hidden="true" className="w-4 h-4 text-gray-500" />}
       </button>
 
       {open && (
@@ -86,7 +87,15 @@ export function AmortTable({ serie, showCorrecao = false, onRowClick }: Props) {
                 {slice.map((m) => (
                   <tr
                     key={m.mes}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => onRowClick?.(m)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        onRowClick?.(m)
+                      }
+                    }}
                     className={`border-b border-gray-800/50 cursor-pointer ${m.temEvento ? 'bg-emerald-900/10 hover:bg-emerald-900/20' : 'hover:bg-gray-800/40'}`}
                   >
                     <td className="px-3 py-2 text-gray-300 font-medium">

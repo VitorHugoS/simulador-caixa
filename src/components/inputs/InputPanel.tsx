@@ -134,11 +134,13 @@ export function InputPanel({ state, dispatch }: Props) {
 
           {/* Sistema toggle */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm text-gray-300 font-medium">Sistema</label>
-            <div className="flex gap-1 bg-gray-800 rounded-xl p-1">
+            <label id="sistema-label" className="text-sm text-gray-300 font-medium">Sistema</label>
+            <div role="radiogroup" aria-labelledby="sistema-label" className="flex gap-1 bg-gray-800 rounded-xl p-1">
               {(['sac', 'price'] as Sistema[]).map((s) => (
                 <button
                   key={s}
+                  role="radio"
+                  aria-checked={params.sistema === s}
                   onClick={() => updateSistema(s)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                     params.sistema === s
