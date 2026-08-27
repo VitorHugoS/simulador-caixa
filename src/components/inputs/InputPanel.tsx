@@ -47,7 +47,7 @@ export function InputPanel({ state, dispatch }: Props) {
   }
 
   return (
-    <div className="bg-gray-900 rounded-2xl border border-gray-800">
+    <div className="bg-gray-900 rounded-[28px] border border-gray-800">
       {/* Linha principal de parâmetros */}
       <div className="p-4">
         {/* Mobile: coluna / Desktop: linha */}

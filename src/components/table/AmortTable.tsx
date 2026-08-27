@@ -58,7 +58,7 @@ export function AmortTable({ serie, showCorrecao = false, onRowClick }: Props) {
         <span className="text-sm font-semibold text-white">
           Tabela mês a mês ({serie.length} meses)
         </span>
-        {open ? <ChevronUpIcon aria-hidden="true" className="w-4 h-4 text-gray-500" /> : <ChevronDownIcon aria-hidden="true" className="w-4 h-4 text-gray-500" />}
+        {open ? <ChevronUpIcon strokeWidth={2} aria-hidden="true" className="w-4 h-4 text-gray-500" /> : <ChevronDownIcon strokeWidth={2} aria-hidden="true" className="w-4 h-4 text-gray-500" />}
       </button>
 
       {open && (

@@ -85,7 +85,7 @@ export function AmortizationModal({ state, onApply, onClose, isSACTransform = fa
         </div>
       )}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-gray-900 border border-gray-800 rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-gray-900 border border-gray-800 rounded-t-[36px] sm:rounded-[36px] w-full sm:max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-white font-semibold text-lg">
             {isSACTransform ? 'Transformar Price em SAC' : 'Adicionar amortização'}
@@ -223,13 +223,13 @@ export function AmortizationModal({ state, onApply, onClose, isSACTransform = fa
 
         <div className="grid grid-cols-2 gap-3">
           <button onClick={onClose}
-            className="py-3 rounded-xl border border-gray-700 text-gray-400 text-sm font-medium hover:border-gray-500 transition-all">
+            className="py-3 rounded-xl border border-gray-700 text-gray-400 text-sm font-medium hover:border-gray-500 transition-colors active:scale-[0.96]">
             Cancelar
           </button>
           <button
             onClick={() => { if (podeSalvar) { onApply(novosEventos); onClose() } }}
             disabled={!podeSalvar}
-            className="py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-600 text-white text-sm font-medium transition-all">
+            className="py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-600 text-white text-sm font-medium transition-colors active:scale-[0.96] disabled:active:scale-100">
             Aplicar
           </button>
         </div>
