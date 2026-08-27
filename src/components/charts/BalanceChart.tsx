@@ -51,7 +51,7 @@ export function BalanceChart({ result, hasEvents }: Props) {
   }
 
   return (
-    <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
+    <div className="p-4 sm:p-6 pb-2">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <h3 className="text-white font-semibold text-sm">Evolução do saldo devedor</h3>
         <div className="flex gap-2 flex-wrap">

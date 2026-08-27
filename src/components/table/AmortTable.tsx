@@ -56,7 +56,7 @@ export function AmortTable({ serie, showCorrecao = false, onRowClick }: Props) {
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-800 transition-colors"
       >
         <span className="text-sm font-semibold text-white">
-          Tabela mês a mês ({serie.length} meses)
+          Cronograma de parcelas ({serie.length} meses)
         </span>
         {open ? <ChevronUpIcon strokeWidth={2} aria-hidden="true" className="w-4 h-4 text-gray-500" /> : <ChevronDownIcon strokeWidth={2} aria-hidden="true" className="w-4 h-4 text-gray-500" />}
       </button>
