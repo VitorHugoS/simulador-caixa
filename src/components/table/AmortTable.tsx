@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { ChevronUpIcon, ChevronDownIcon, ArrowLeftIcon, ArrowRightIcon } from '@/components/ui/icons'
-import { MesData } from '@/lib/engine/types'
+import { AppState, MesData } from '@/lib/engine/types'
 
 const PAGE_SIZE = 50
 
@@ -12,11 +12,12 @@ function moeda(n: number): string {
 
 interface Props {
   serie: MesData[]
+  state: AppState
   showCorrecao?: boolean
   onRowClick?: (row: MesData) => void
 }
 
-export function AmortTable({ serie, showCorrecao = false, onRowClick }: Props) {
+export function AmortTable({ serie, state, showCorrecao = false, onRowClick }: Props) {
   const [page, setPage] = useState(0)
   const [open, setOpen] = useState(false)
 
@@ -51,10 +52,35 @@ export function AmortTable({ serie, showCorrecao = false, onRowClick }: Props) {
     
     // Título
     doc.setFontSize(16)
-    doc.text('FinanSim - Cronograma de Parcelas', 40, 40)
+    doc.text('FinanSim - Simulação de Financiamento', 40, 40)
     
+    // Obter dados adicionais
+    let renda = 0
+    let valorImovel = 0
+    try {
+      const cached = localStorage.getItem('caixa_perfil')
+      if (cached) {
+        const p = JSON.parse(cached)
+        renda = p.renda || 0
+        valorImovel = p.valorImovel || 0
+      }
+    } catch {
+      // Ignore cache read errors
+    }
+
+    const pv = state.params.pv
+    const entrada = valorImovel > 0 ? (valorImovel - pv) : 0
+    const dataHora = new Date().toLocaleString('pt-BR')
+
     doc.setFontSize(10)
-    doc.text(`Total de parcelas: ${serie.length}`, 40, 60)
+    doc.setTextColor(100)
+    doc.text(`Gerado em: ${dataHora}`, 40, 56)
+
+    doc.setTextColor(0)
+    doc.text(`Valor Financiado: ${moeda(pv)}`, 40, 80)
+    if (entrada > 0) doc.text(`Entrada (estimada): ${moeda(entrada)}`, 40, 96)
+    if (renda > 0) doc.text(`Renda Bruta: ${moeda(renda)}`, 40, 112)
+    doc.text(`Total de parcelas: ${serie.length}`, 40, 128)
 
     const baseHeaders = ['Mês', 'Juros', 'Amort.', 'Taxas', 'Parcela', 'Aporte', 'Total Pago', 'Saldo']
     const headersPDF = showCorrecao
@@ -85,7 +111,7 @@ export function AmortTable({ serie, showCorrecao = false, onRowClick }: Props) {
     autoTable(doc, {
       head: [headersPDF],
       body: tableData,
-      startY: 80,
+      startY: 150,
       styles: { fontSize: 8, cellPadding: 3 },
       headStyles: { fillColor: [30, 58, 138] }, // bg-blue-900
       alternateRowStyles: { fillColor: [243, 244, 246] }, // bg-gray-100
