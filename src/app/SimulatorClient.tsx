@@ -148,9 +148,14 @@ export function SimulatorClient() {
           onRowClick={(row) => setSelectedRow(row)}
         />
 
-        <p className="text-center text-xs text-gray-700 pb-4">
-          FinanSim · Dados apenas ilustrativos · Consulte seu banco para valores exatos
-        </p>
+        <div className="flex flex-col items-center justify-center gap-2 pb-4">
+          <p className="text-center text-xs text-gray-700">
+            FinanSim · Dados apenas ilustrativos · Consulte seu banco para valores exatos
+          </p>
+          <a href="mailto:vitorhugoss17@gmail.com" className="text-xs text-gray-500 hover:text-blue-400 transition-colors">
+            Contato: vitorhugoss17@gmail.com
+          </a>
+        </div>
       </div>
 
       {modalOpen && (
