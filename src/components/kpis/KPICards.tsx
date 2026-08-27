@@ -94,16 +94,18 @@ export function KPICards({ result, hasEvents, prazoContratado }: Props) {
   ]
 
   return (
-    <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
-      {/* Header */}
-      <div className="grid grid-cols-[1fr_repeat(3,minmax(0,1fr))] border-b border-gray-800">
-        <div className="px-4 py-3" />
-        {cols.map((col) => (
-          <div key={col.key} className="px-3 py-3 text-center">
-            <span className={`text-xs font-semibold ${col.color}`}>{col.label}</span>
+    <div className="bg-gray-900 rounded-[28px] border border-gray-800 overflow-hidden">
+      <div className="overflow-x-auto">
+        <div className="min-w-[340px] sm:min-w-full">
+          {/* Header */}
+          <div className="grid grid-cols-[1.2fr_repeat(3,minmax(0,1fr))] border-b border-gray-800">
+            <div className="px-4 py-3" />
+            {cols.map((col) => (
+              <div key={col.key} className="px-2 sm:px-3 py-3 text-center">
+                <span className={`text-xs font-semibold ${col.color}`}>{col.label}</span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
       {/* Rows */}
       {rows.map((row, ri) => {
@@ -161,6 +163,8 @@ export function KPICards({ result, hasEvents, prazoContratado }: Props) {
           </div>
         )
       })}
+        </div>
+      </div>
     </div>
   )
 }
