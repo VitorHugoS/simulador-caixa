@@ -43,6 +43,57 @@ export function AmortTable({ serie, showCorrecao = false, onRowClick }: Props) {
     URL.revokeObjectURL(url)
   }
 
+  async function exportPDF() {
+    const { jsPDF } = await import('jspdf')
+    const autoTable = (await import('jspdf-autotable')).default
+
+    const doc = new jsPDF('p', 'pt', 'a4')
+    
+    // Título
+    doc.setFontSize(16)
+    doc.text('FinanSim - Cronograma de Parcelas', 40, 40)
+    
+    doc.setFontSize(10)
+    doc.text(`Total de parcelas: ${serie.length}`, 40, 60)
+
+    const baseHeaders = ['Mês', 'Juros', 'Amort.', 'Taxas', 'Parcela', 'Aporte', 'Total Pago', 'Saldo']
+    const headersPDF = showCorrecao
+      ? ['Mês', 'Juros', 'Amort.', 'Taxas', 'Corr. TR', 'Parcela', 'Aporte', 'Total Pago', 'Saldo']
+      : baseHeaders
+
+    const tableData = serie.map((m) => {
+      const row = [
+        m.mes,
+        moeda(m.juros),
+        moeda(m.amortOrd),
+        moeda(m.taxas),
+      ]
+      
+      if (showCorrecao) {
+        row.push(moeda(m.correcaoMonetaria))
+      }
+      
+      row.push(
+        moeda(m.parcela),
+        moeda(m.aporteExtra),
+        moeda(m.parcela + m.aporteExtra),
+        moeda(m.sdFim)
+      )
+      return row
+    })
+
+    autoTable(doc, {
+      head: [headersPDF],
+      body: tableData,
+      startY: 80,
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: [30, 58, 138] }, // bg-blue-900
+      alternateRowStyles: { fillColor: [243, 244, 246] }, // bg-gray-100
+    })
+
+    doc.save('finansim.pdf')
+  }
+
   const baseHeaders = ['Mês', 'Juros', 'Amort.', 'Taxas', 'Parcela', 'Aporte', 'Total Pago', 'Saldo Devedor']
   const headers = showCorrecao
     ? ['Mês', 'Juros', 'Amort.', 'Taxas', 'Correção TR', 'Parcela', 'Aporte', 'Total Pago', 'Saldo Devedor']
@@ -63,12 +114,21 @@ export function AmortTable({ serie, showCorrecao = false, onRowClick }: Props) {
 
       {open && (
         <>
-          <div className="px-4 pb-3 flex justify-end">
+          <div className="px-4 pb-3 flex justify-end gap-2">
             <button
               onClick={exportCSV}
-              className="text-xs px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-400 hover:text-white hover:border-gray-500 transition-all"
+              className="text-xs px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-400 hover:text-white hover:border-gray-500 transition-all cursor-pointer"
             >
               Exportar CSV
+            </button>
+            <button
+              onClick={exportPDF}
+              className="text-xs px-3 py-1.5 bg-blue-900/30 border border-blue-800/50 rounded-lg text-blue-400 hover:text-blue-300 hover:border-blue-700 transition-all cursor-pointer flex items-center gap-1"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Exportar PDF
             </button>
           </div>
 
