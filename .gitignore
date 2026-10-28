@@ -49,3 +49,13 @@ task.md
 .rtk/
 .agents/
 CLAUDE.md
+
+# scratch files
+fix.ts
+next.log
+sim_local.ts
+test_local.ts
+test_mcp.ts
+test_mcp2.ts
+test_sdk.ts
+
