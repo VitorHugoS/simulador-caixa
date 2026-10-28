@@ -9,7 +9,18 @@ export async function fetchUFs(): Promise<CaixaUF[]> {
 }
 
 export async function fetchMunicipios(sgUf: string): Promise<CaixaMunicipio[]> {
-  const res = await fetch(`/api/caixa/municipios?sgUf=${sgUf}`)
+  const uf = sgUf.trim().toUpperCase()
+  try {
+    const staticRes = await fetch(`/data/municipios/${uf}.json`)
+    if (staticRes.ok) {
+      const staticData = await staticRes.json()
+      if (Array.isArray(staticData) && staticData.length > 0) return staticData
+    }
+  } catch {
+    // Fall back to server API route
+  }
+
+  const res = await fetch(`/api/caixa/municipios?sgUf=${uf}`)
   if (!res.ok) throw new Error(`Municípios falhou: ${res.status}`)
   const data = await res.json()
   const list: CaixaMunicipio[] = Array.isArray(data) ? data : (data.data ?? [])
